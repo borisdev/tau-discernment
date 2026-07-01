@@ -1,11 +1,6 @@
 # tau-belief-state-bench
 
-A per-turn **belief-state** instrumentation layer for τ-bench (the `tau2-bench` repo at its τ³ release). τ-bench grades an agent on the **terminal world state**; it does not measure whether the agent understood the user's problem, or whether it honored requirements that never touch the database. This repo adds two agent-agnostic components on top of the existing benchmark:
-
-1. a **belief observer** that extracts the agent's estimate of the user's problem after each turn, and
-2. a structured **`ProblemSpec`** that lifts a task's requirements out of free-text instructions into typed constraints a grader can check directly.
-
-Trimmed, text-only derivative of [`sierra-research/tau2-bench`](https://github.com/sierra-research/tau2-bench) (MIT); see [`VENDOR.md`](VENDOR.md).
+A per-turn **belief-state** instrumentation layer for τ-bench (the `tau2-bench` repo at its τ³ release).
 
 ---
 
@@ -118,6 +113,13 @@ Task 47 is the **UNKNOWN** / moderate case, not the severe one. The two things t
 ---
 
 ## Overview
+
+τ-bench grades an agent on the **terminal world state**; it does not measure whether the agent understood the user's problem, or whether it honored requirements that never touch the database. This repo adds two agent-agnostic components on top of the existing benchmark:
+
+1. a **belief observer** that extracts the agent's estimate of the user's problem after each turn, and
+2. a structured **`ProblemSpec`** that lifts a task's requirements out of free-text instructions into typed constraints a grader can check directly.
+
+Trimmed, text-only derivative of [`sierra-research/tau2-bench`](https://github.com/sierra-research/tau2-bench) (MIT); see [`VENDOR.md`](VENDOR.md).
 
 - **The gap.** τ³'s reward is the terminal DB state plus required output substrings (`reward_basis`). A requirement that does not change the DB — e.g. *"do not transfer me to a human"* — is unobservable to the grade. This is verified against τ³'s real grading spec, not assumed.
 - **Pilot (6 airline tasks).** Claude Haiku as the agent under test; Claude Sonnet as user-simulator and belief observer. On **1 of 6 tasks** the belief/constraint layer changes the verdict: **task 47 passes the DB grade while the agent violates an explicit "don't transfer" requirement.** The standard grade already fails 3 tasks (wrongful cancellations); 2 are clean passes. So the layer's net new signal in this pilot is one task.
