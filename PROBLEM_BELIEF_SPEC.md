@@ -57,6 +57,12 @@ The nearest existing artifacts — and why each is *not* a belief layer:
 **Conclusion: the agent's evolving problem representation is the one first-class τ-bench entity
 that has never been made explicit or scored — in any version through τ³.**
 
+### Root cause of the silent false-pass: `task_instructions` ↔ `evaluation_criteria` drift
+
+Each τ³ task hand-authors two artifacts: the free-text scenario (`user_scenario.instructions.task_instructions`) and the structured `evaluation_criteria` (`reward_basis` = DB + COMMUNICATE + assertions). They are separate, so they can drift. On task 47 the scenario states *"you don't want to be transferred"*; the `evaluation_criteria` encode no no-transfer predicate; the grader grades the criteria, so the transfer passes.
+
+A single `ProblemSpec` removes the drift by construction: compile the user-sim prompt *and* the grading predicates from one source, and the two cannot disagree — the hand-authored `evaluation_criteria` become a compiled view, not a second artifact. This bounds *internal consistency* (scenario and grading agree); it does not certify the spec encodes the *right* constraints (the ontology-correctness problem, separate).
+
 ---
 
 ## 2. Existing τ³ entities (where things live)

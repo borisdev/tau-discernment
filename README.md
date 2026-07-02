@@ -17,7 +17,11 @@ We define **ambiguity** as the gap between the true `ProblemSpec` and the agent'
 
 ## τ³-bench passes a real violation on airline task 47
 
-In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task states *"you don't want to be transferred to another agent."* The τ³-bench grader scores it `PASS` anyway — a **silent false-pass**: the *don't-transfer* requirement is only in the free-text `task_instructions`, not in the structured criteria the grader checks. Structure it (below) and it becomes checkable.
+In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task states *"you don't want to be transferred to another agent."* The τ³-bench grader scores it `PASS` anyway — a **silent false-pass**: the *don't-transfer* requirement is only in the free-text `task_instructions`, not in the structured criteria the grader checks.
+
+## Root cause: task instructions ↔ grading criteria drift
+
+`task_instructions` and `evaluation_criteria` are separate hand-authored artifacts, so they drift — task 47 is where the scenario forbids the transfer but the graded criteria don't. A single `ProblemSpec` compiled to both closes the drift by construction. → [`PROBLEM_BELIEF_SPEC.md`](PROBLEM_BELIEF_SPEC.md)
 
 ## ProblemSpec and ProblemSpecBelief
 
