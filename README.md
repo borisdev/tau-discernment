@@ -7,9 +7,9 @@
 We extend τ³-bench from evaluating only the terminal DB state to also evaluating the **convergence (or divergence) of the agent's `ProblemSpecBelief` toward the user's true `ProblemSpec`** — how well the agent resolves ambiguity, the `UNKNOWN` slots of its belief, by asking the user, before it acts.
 
 **Why it matters for AI quality.**
-- **Better-behaved agents.** Two agents reaching the same end state can differ in whether they understood the problem, asked before acting, or respected constraints. Grading belief-convergence + constraints turns those *process* differences into signal — for eval *and* for training.
-- **A more precise grader.** Decomposing a holistic judgment into checkable predicates raises reliability (factored / rubric-based evaluation) and closes **silent false-passes** — catching violations outcome-only scoring is structurally blind to.
-- **Explicit expert knowledge.** The `ProblemSpec` is versioned, executable code that turns tacit expertise into checkable rules; enriching it **compounds** into a sharper grader and a better training target — a learning loop, and an auditable record of what *correct* means as policy changes.
+- **Better-behaved agents.**
+- **A more precise, deterministic grader.**
+- **`ProblemSpec` shape captures expertise in policy and tacit communication knowledge.**
 
 ---
 
