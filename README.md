@@ -4,11 +4,31 @@
 
 ---
 
+## What is this about?
+
+**In brief.** We usually grade an AI agent on whether it reached the right final result. But an agent can reach a good-looking result while misunderstanding what the user wanted — or while doing something the user explicitly forbade. This grades whether the agent actually *understood the problem*: it tracks the agent's belief about the user's goal as the conversation unfolds and checks it against the truth.
+
+**In detail.** A customer-service dialogue is a *partially observable* problem: the user's true objective is a **latent variable** the agent must infer from partial, incrementally-revealed evidence. τ-bench — like most agent benchmarks — applies **outcome supervision**: it scores only the terminal world state. That misses two failure modes: (1) an agent that reaches the correct end state with a wrong or lucky understanding, and (2) an agent that violates a requirement which never touches the graded state (e.g., escalating a user who said *"don't transfer me"*). We add **process supervision over the belief state**: lift the task's free-text instructions into a typed **`ProblemSpec`** — an expert-authored ontology of goals, constraints, and invariants, each a checkable predicate — and track a **`BeliefState`**, the agent's evolving estimate of that spec. The **convergence (or divergence) of the `BeliefState` toward the true `ProblemSpec`** is an observable proxy for how well the agent grounded the user's goal — judged per turn, not just at the end. *(Framing in the literature's terms — POMDP belief states, assistance games, process reward models, factored evaluation — is in [`FRAMING.md`](FRAMING.md).)*
+
+**Why it matters for AI quality.**
+- **Learning.** The `ProblemSpec` is code that experts progressively enrich; encoded expertise **compounds** into both a sharper grader and a better training target. The ontology grows, the system improves — a learning loop, not a one-off benchmark.
+- **Grader accuracy.** Decomposing a holistic judgment into checkable predicates raises reliability (**factored / rubric-based evaluation**) and closes **silent false-passes** — it catches violations that outcome-only scoring is structurally blind to.
+- **Behavior, not just terminal state.** Two agents reaching the same end state can differ in whether they understood the problem, asked before acting, or respected constraints. Belief-convergence + constraint checks turn those **process** differences into signal — for eval *and* for training.
+
+---
+
 ## Motivation: The grader's belief blind spot causes a bug
 
-**The τ³-bench grader is wrong on airline task 47.** The agent correctly refuses an ineligible refund, then transfers the user to a human — even though the task states *"you don't want to be transferred to another agent."* The grade is `PASS`. That requirement was one clause buried in the free-text `task_instructions`, so the grader never checks it. See the exact object below.
+**The τ³-bench grader is wrong on airline task 47.** The agent correctly refuses an ineligible refund, then transfers the user to a human — even though the task states *"you don't want to be transferred to another agent."* The grade is `PASS`. That requirement was one clause buried in the free-text `task_instructions`, so the grader never checks it.
 
-Raw τ³ task — one prose blob:
+## Intermediate artifacts fix: ProblemSpec and BeliefState
+
+We add two structured entities:
+
+- **`ProblemSpec`** — a typed specification of the task's *true* requirements (goal, constraints, invariants), each a checkable predicate. Experts progressively enrich it, which monotonically sharpens the grader: a learning system, and a more accurate grader.
+- **`BeliefState`** — the agent's evolving *estimate* of that `ProblemSpec`, inferred from the dialogue. Its convergence (or divergence) toward the true `ProblemSpec` is an observable proxy for competence — extending judgment from the terminal state to the agent's ability to *understand the problem before acting*.
+
+**From prose to a checkable spec.** The raw task is one free-text blob:
 
 ```json
 "task_instructions": "Be persistent; don't volunteer info. You want a full refund and you
@@ -18,77 +38,28 @@ Raw τ³ task — one prose blob:
 "known_info": "Sophia Silva / sophia_silva_7557 / H8Q05L"
 ```
 
-## Intermediate artifacts fix: ProblemSpec and BeliefState
-
-By structuring `task_instructions` into a **`ProblemSpec`**, and the agent's convergence to it across dialog turns as a **`BeliefState`**, we can observe the agent's evolving belief — and open an opportunity to gather expert knowledge on the correct problem spec (`UNKNOWN` = a slot the agent hasn't resolved). Spec is `TASK_47_SPEC` in [`problem_spec.py`](https://github.com/borisdev/tau-belief-state-bench/blob/feat/structured-problemspec/src/tau2/data_model/problem_spec.py).
-
-Three typed instances — the spec the agent must reach, and its belief at the start vs. the moment it acted:
-
-<table>
-<tr>
-<th align="left" width="34%">The spec — <code>ProblemSpec</code></th>
-<th align="left" width="33%">Agent belief @ turn 1</th>
-<th align="left" width="33%">Agent belief @ turn 12 — it acts</th>
-</tr>
-<tr valign="top">
-<td>
+Structured, it becomes the **true `ProblemSpec`** — each requirement now a checkable predicate (`TASK_47_SPEC` in [`problem_spec.py`](https://github.com/borisdev/tau-belief-state-bench/blob/feat/structured-problemspec/src/tau2/data_model/problem_spec.py)):
 
 ```python
-ProblemSpec(
- goal="cancel;"
-   " refund-only",
- constraints=[
-  Constraint(
-   "no transfer"
-   " unless user"
-   " asks"),
-  Constraint(
-   "no cancel"
-   " unless full"
-   " refund")])
+ProblemSpec(                                        # ground truth — the target
+  goal="cancel; refund-only",
+  constraints=[
+    Constraint("no transfer unless the user asks"),
+    Constraint("no cancel unless full refund")])
 ```
 
-each requirement is
-a checkable predicate.
-
-</td>
-<td>
+**The agent never sees this spec — it must infer it.** Its `BeliefState` is its *estimate* of the `ProblemSpec`, and here it diverges: at the moment it acts (turn 12), the slot the "no transfer" constraint depends on is still `UNKNOWN`.
 
 ```python
-BeliefState(
- turn=1,
- goal="cancel"
-   " + refund",
- refund_eligible=
-   UNKNOWN,
- transfer_requested=
-   UNKNOWN)
+BeliefState(turn=1,  goal="cancel + refund",         # estimate — nothing resolved yet
+            refund_eligible=UNKNOWN, transfer_requested=UNKNOWN)
+
+BeliefState(turn=12, refund_eligible=False,           # learned the refund fact…
+            transfer_requested=UNKNOWN,                # …but this stayed UNKNOWN
+            action="transfer")                         # ← acted anyway
 ```
 
-nothing resolved yet.
-
-</td>
-<td>
-
-```python
-BeliefState(
- turn=12,
- refund_eligible=
-   False,
- transfer_requested=
-   UNKNOWN,
- action=
-   "transfer")
-```
-
-resolved refund — but
-**acted while
-`transfer_requested`
-was still UNKNOWN.**
-
-</td>
-</tr>
-</table>
+The belief never converged on `transfer_requested`; the agent acted while it was `UNKNOWN`. Full per-turn trajectory and graded verdict: [`poc/CASE_STUDY.md`](poc/CASE_STUDY.md).
 
 ### Intermediate artifacts open opportunities to integrate expertise into the grader and the AI
 
