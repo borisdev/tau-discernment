@@ -17,7 +17,7 @@ We define **ambiguity** as the gap between the true `ProblemSpec` and the agent'
 
 ## The τ³-bench grader is wrong on airline task 47
 
-In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task states *"you don't want to be transferred to another agent."* The grade is `PASS` — a **silent false-pass**: the requirement was one clause buried in the free-text `task_instructions`, so the grader never checks it.
+In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task states *"you don't want to be transferred to another agent."* The τ³-bench grader scores it `PASS` anyway — a **silent false-pass**: the requirement was one clause buried in the free-text `task_instructions`, so the grader never checks it.
 
 ## ProblemSpec and ProblemSpecBelief
 
