@@ -1,4 +1,4 @@
-# AgentProblemBeliefState: A Per-Turn Belief-Convergence Layer for τ-bench
+# ProblemSpecBelief: A Per-Turn Belief-Convergence Layer for τ-bench
 
 > **What this is.** A design + reference implementation plan for an *optional instrumentation
 > layer* on top of τ³-bench that captures and scores the agent's **evolving belief about the
@@ -47,7 +47,7 @@ grep -rniE "belief|mental_model|problem_spec|known_fact|missing_fact|inferred|wo
 
 The nearest existing artifacts — and why each is *not* a belief layer:
 
-| Existing in τ³ | What it does | Why it's not AgentProblemBeliefState |
+| Existing in τ³ | What it does | Why it's not ProblemSpecBelief |
 |---|---|---|
 | `metrics/break_down_metrics.py` | Splits reward by **component type** (DB vs COMMUNICATE vs ENV). | Per-trajectory, not per-turn; about *reward components*, not *agent beliefs*. |
 | `evaluator/hallucination_reviewer.py` | Detects fabrication in the **user simulator's** messages. | Wrong subject (user, not agent); gates reruns, not scored. |
@@ -74,7 +74,7 @@ that has never been made explicit or scored — in any version through τ³.**
 
 ---
 
-## 3. The proposed artifact: `AgentProblemBeliefState` (per turn, agent-agnostic, not CoT)
+## 3. The proposed artifact: `ProblemSpecBelief` (per turn, agent-agnostic, not CoT)
 
 After each agent turn, an **observer** (a separate LLM, *not* the agent under test) reads the
 transcript-so-far and emits the agent's current *belief about the user's problem* — facts and
@@ -91,7 +91,7 @@ class Constraint(BaseModel):
     description: str               # "won't cancel unless refunded"
     source: Literal["user_stated", "policy", "inferred"]
 
-class AgentProblemBeliefState(BaseModel):
+class ProblemSpecBelief(BaseModel):
     turn: int
     goal_summary: str              # one-line current understanding of the task
     beliefs: list[Belief]
@@ -152,7 +152,7 @@ directly to a classic "hallucinated citation" failure mode (§7).
 
 ---
 
-## 5. Ground truth: `TrueProblemSpec` (τ³ pre-pays most of the cost)
+## 5. Ground truth: `ProblemSpec` (τ³ pre-pays most of the cost)
 
 A skeptic's objection to this whole idea is *"isn't belief-recall just re-deriving the instruction
 the user already holds?"* Two things defeat it:
@@ -166,7 +166,7 @@ the user already holds?"* Two things defeat it:
    has not been told everything; measuring what it correctly inferred vs. hallucinated vs.
    still-missing is information the terminal reward genuinely does not contain.
 
-### Metrics (per turn, against the static `TrueProblemSpec`)
+### Metrics (per turn, against the static `ProblemSpec`)
 
 | Metric | Definition |
 |---|---|
@@ -191,10 +191,10 @@ This converts τ-bench's single terminal bit into a **trajectory of belief F1**,
             └─────────────────────────────┬────────────────────────┘
                                           │ trajectory (read-only)
         ┌──────────────────────────────────▼──────────── NEW: optional observer ┐
- Task ──► distill ──► TrueProblemSpec ──────┐           │
+ Task ──► distill ──► ProblemSpec ──────┐           │
  (known_info / unknown_info / criteria)     ▼           ▼
                                      BeliefScorer ◄── BeliefExtractor (observer LLM; reads traj[:k])
-                                            │           │  emits AgentProblemBeliefState per agent turn
+                                            │           │  emits ProblemSpecBelief per agent turn
                                             ▼           ▼
                           belief_trace + convergence ──► SimulationRun.belief_trace (new optional field)
 ```
@@ -203,7 +203,7 @@ This converts τ-bench's single terminal bit into a **trajectory of belief F1**,
 
 1. **Fully decoupled (recommended):** a new `src/tau2/scripts/belief_trace_analysis.py` mirroring
    `evaluate_trajectories.py`. Reads saved `SimulationRun`s, replays turn-by-turn, calls the
-   observer, scores against `TrueProblemSpec`. **Zero changes to agents, envs, or the run loop** —
+   observer, scores against `ProblemSpec`. **Zero changes to agents, envs, or the run loop** —
    runs on *historical* result files. This is the "optional instrumentation layer," and the answer
    to "can it work without touching existing agents?" is **yes**.
 2. **As an evaluator:** a `BeliefEvaluator(EvaluatorBase[Message])` alongside the existing evaluators,
@@ -309,7 +309,7 @@ binding constraint on grader fidelity.
   `break_down_metrics`, `hallucination_reviewer`, and `nl_assertions` are adjacent but none tracks
   per-turn agent belief or convergence.
 - τ³'s `known_info` / `unknown_info` split and the incrementally-withholding user simulator together
-  make `TrueProblemSpec` cheap to build *and* defensible against the "you're just re-reading the
+  make `ProblemSpec` cheap to build *and* defensible against the "you're just re-reading the
   instruction" objection. **Make the convergence curve, not terminal belief-F1, the headline.**
 - It is cheap and non-invasive (post-hoc observer over existing `SimulationRun`s), which is what
   makes a benchmark extension adoptable — and it upgrades cleanly into a training signal via `gym/`.

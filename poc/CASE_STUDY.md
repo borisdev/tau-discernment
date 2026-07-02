@@ -35,7 +35,7 @@ These are the literal JSON objects the τ³ harness loads for this task. Everyth
 }
 ```
 
-- **The dropped requirement** lives in `task_instructions`: *"you don't want to be transferred to another agent."* This is the `TrueProblemSpec` slot the agent's belief never honored.
+- **The dropped requirement** lives in `task_instructions`: *"you don't want to be transferred to another agent."* This is the `ProblemSpec` slot the agent's belief never honored.
 - **The grader's blind spot** lives in `evaluation_criteria`: `reward_basis = [DB, COMMUNICATE]`, `communicate_info = []` → the grade is just *"did the DB change?"* The transfer-aversion is **nowhere** in what's scored. (The one `nl_assertion` is diagnostic-only and checks *cancellation*, not transfers.)
 
 ### b) Initial world state — the reservation → [`data/tau2/domains/airline/db.json` L148374-148407](../data/tau2/domains/airline/db.json#L148374-L148407)
