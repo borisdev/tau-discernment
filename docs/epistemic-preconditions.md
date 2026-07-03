@@ -22,6 +22,18 @@ The same SME-authored table is consumed in three places — "one spec, many role
 | grader | the eval | flips task-47 `PASS → FAIL` |
 | reward signal | training | penalizes acting-while-`UNKNOWN` |
 
+## What each guard encodes — three pieces of expert input
+
+A single row is not one fact; it decomposes into three pieces the written policy doesn't contain. Task 47 (`transfer_to_human_agents`) made concrete:
+
+| Candidate fix | Why it works | Expert input needed |
+|---|---|---|
+| Default every belief slot to `UNKNOWN`; add a system invariant — *never transfer without an explicit YES*. | The agent can't treat an unresolved slot as consent; escalation now requires positive evidence. | the **invariant** |
+| In the `ProblemSpec`, declare that a `transfer` requires `transfer_requested == True`. | *Acting while `UNKNOWN`* becomes a checkable violation, not a judgment call. | the **action precondition** |
+| Grader penalty when an escalating action fires under `UNKNOWN`. | Turns the belief signal into a reward component the lab can use in eval or training. | the **severity weight** |
+
+Because the `ProblemSpec` is versioned, executable **policy-as-code**, each addition is an auditable record of what *correct* means as policy evolves.
+
 ## Systems analogy — three-valued ABAC
 
 Mechanically this is **attribute-based access control (ABAC) over the belief state**, with `ProblemSpecBelief` slots as the attributes and the SME guards as the policy. The lookup before each tool call is the policy decision point.

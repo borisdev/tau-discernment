@@ -85,19 +85,7 @@ Each is a `belief.X` guard on the belief state. Violations are **DB-invisible**:
 | 9 | `book_reservation` | `belief.payment_method_authorized == True` | Charges a saved card the user didn't approve for *this* purchase. |
 | 10 | `cancel_reservation` (multi-segment trip) | `belief.cancel_scope == whole_trip` | Cancels the whole itinerary when the user meant one leg — every cancellation looks valid in the DB. |
 
-→ Why state-grading is blind to these, the grader/runtime/training triple, and the three-valued ABAC framing: [`docs/epistemic-preconditions.md`](docs/epistemic-preconditions.md).
-
-### Enriching the spec with expertise (three examples)
-
-These are the **`UNKNOWN`-slot mechanics** made concrete — which slots must be resolved, and what an agent may (or may not) do while one is still `UNKNOWN`. That is exactly where expert knowledge enters; each fix below adds **one piece the written policy doesn't contain**:
-
-| Candidate fix | Why it works | Expert input needed |
-|---|---|---|
-| Default every belief slot to `UNKNOWN`; add a system invariant — *never transfer without an explicit YES*. | The agent can't treat an unresolved slot as consent; escalation now requires positive evidence. | the **invariant** |
-| In the `ProblemSpec`, declare that a `transfer` requires `transfer_requested == True`. | *Acting while `UNKNOWN`* becomes a checkable violation, not a judgment call. | the **action precondition** |
-| Grader penalty when an escalating action fires under `UNKNOWN`. | Turns the belief signal into a reward component the lab can use in eval or training. | the **severity weight** |
-
-Because the `ProblemSpec` is versioned, executable **policy-as-code**, each addition is an auditable record of what *correct* means as policy evolves.
+→ Why state-grading is blind to these, what each guard encodes (invariant / action precondition / severity weight), the grader/runtime/training triple, and the three-valued ABAC framing: [`docs/epistemic-preconditions.md`](docs/epistemic-preconditions.md).
 
 ## Root cause of the false pass: task instructions ↔ grading criteria drift
 
