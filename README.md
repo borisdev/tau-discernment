@@ -2,15 +2,21 @@
 
 *Before an AI agent fires a consequential action, does it run a preflight check — confirming the user's latent requirements that no database can answer?*
 
-**This benchmark.** We extend τ³-bench from grading only the terminal database state to also grading whether the AI agent runs a **preflight check** before firing a consequential action — confirming the user's latent requirements.
-
 ## Motivation
 
-**Failure pattern example.** Claude Haiku refuses an ineligible refund, then transfers the user to a human — though the task said *"you don't want to be transferred to another agent."* τ³-bench scores it **PASS**: the *don't-transfer* requirement lives only in free-text `task_instructions`, never in the grader's structured criteria. A **silent false-pass**. ([root cause →](#root-cause-of-the-false-pass-task-instructions--grading-criteria-drift))
+**A real miss — task 47.** We ran Claude Haiku on τ³ airline task 47:
+- **The user's latent requirement:** *don't transfer me to another agent* (stated in the task).
+- **What the agent did:** correctly refused an ineligible refund — then **transferred the user to a human anyway**, never confirming they wanted it.
+- **What τ³-bench scored:** **PASS** — the transfer left the database unchanged, and the *don't-transfer* rule sits in free-text `task_instructions`, not in the grader's structured criteria.
+- **The problem:** a real, stated user requirement was violated — invisibly. A **silent false-pass**. ([root cause →](#root-cause-of-the-false-pass-task-instructions--grading-criteria-drift))
 
 **How this helps AI quality.** Surfacing these failures turns them into concrete questions for human subject-matter experts: *for a given action, what must an AI agent sufficiently understand about its user's state of mind before committing — so it doesn't harm or inconvenience the user?* ([synthetic example table →](docs/preflight-checklist-example.md))
 
 *("Sufficiently understand the user's state of mind" = the user's **epistemic state** — their model of reality. Where it diverges from the agent's, for a specific action, harm can follow.)*
+
+## What this benchmark does
+
+τ-PreflightCheck makes that question **gradeable**: beyond τ³'s terminal database state, it scores whether the agent established the user's action-relevant requirements *before* firing — flipping silent false-passes like task 47 into **FAIL**s.
 
 ## Roadmap
 
@@ -46,7 +52,7 @@ Deeper theory and full prior art (POMDP belief states, assistance games, epistem
 Our eval innovation: we **instrument the unobservable** — the user's latent problem and the agent's current belief — as two comparable typed objects, and treat the **gap between them as the failure signal**. That gap flags exactly where **targeted expert data** most improves AI quality.
 
 **Why it matters for AI quality.**
-- **A more precise, deterministic grader** — the `PASS` in the Example above is a real bug it catches on a live τ³ airline task.
+- **A more precise, deterministic grader** — the task-47 `PASS` above is a real bug it catches on a live τ³ airline task.
 - **Better-behaved agents** — when a required `ProblemSpecBelief` slot is `UNKNOWN`, the agent asks rather than acting on a guess. [ProblemSpec vs ProblemSpecBelief →](#problemspec-and-problemspecbelief)
 - **Human expertise becomes reusable data** — the shape of the `ProblemSpec` lets us collect expert judgment and encode it as **human-expert data** that both grades and gates agent behavior. [SME-authored policy →](#sme-authored-policy-what-ambiguity-to-resolve-before-acting)
 
