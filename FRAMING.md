@@ -19,6 +19,23 @@ The task is *partially observable*: the agent maintains a **belief state** — a
 - **Structured prediction** — the `ProblemSpec` is a structured output, not a scalar.
 - **Why structure makes the grader more accurate:** factored / decomposed evaluation and scalable oversight (Christiano's IDA, Irving's debate, Ought's factored cognition; Anthropic's scalable-oversight agenda). Decomposition raises inter-rater reliability — the reason rubric-based grading beats holistic scoring.
 
+## 3. Preconditions on knowledge, not just the world (epistemic planning)
+
+Our core move — an action may require the agent to *know* something, not merely for something to be *true* — is **epistemic planning**, a long-established line in symbolic AI. This is what makes "epistemic precondition" grounded prior art, not a coinage:
+
+- **Knowledge preconditions** — Moore, *A Formal Theory of Knowledge and Action* (1985). To act you may need to *know* a fact (to dial a safe, know the combination), not merely for it to hold. Our `epistemic_pre` is a knowledge precondition.
+- **Knowledge-based programs** — Fagin, Halpern, Moses & Vardi, *Reasoning About Knowledge* (1995). Programs whose guards are tests on knowledge: "if the agent knows φ, act." An epistemic precondition is a knowledge-based guard on a tool call.
+- **Epistemic planning** — Bolander & Andersen (2011). Planning in the space of belief/knowledge states rather than world states.
+- **Sensing / knowledge-producing actions** — Scherl & Levesque (1993). Actions whose effect changes what the agent *knows*, not the world. A clarifying question is a sensing action that resolves an `UNKNOWN` slot.
+- **The stopping rule — Clark's grounding criterion.** Grounding need only reach a *criterion sufficient for current purposes*; equivalently, **satisficing** (Simon) and **value of information** (stop asking when marginal VOI < cost). This is why we scope ambiguity to the fields the *pending action* needs, not every field.
+- **Explicit belief in PDDL** — PDDL-Mind (Zhu et al., [arXiv:2604.17819](https://arxiv.org/abs/2604.17819)) makes the belief state explicit in PDDL for theory-of-mind accuracy; we extend belief from a *tracked* quantity to an *action precondition*.
+
+### Software-engineering lineage
+
+- **Design by Contract** — Meyer (Eiffel): `require` / `ensure` / `invariant`. Our per-action guards are preconditions in the DbC sense; the *invariant / action-precondition / severity* decomposition is DbC applied per tool.
+- **FMEA** (failure mode and effects analysis): enumerate each action's failure mode and severity — the origin of our per-guard **severity** weight.
+- **ABAC / policy-as-code** (OPA, AWS IAM): the runtime gate is attribute-based access control over the belief state, extended to three-valued **allow / deny / ask**. See [`docs/epistemic-preconditions.md`](docs/epistemic-preconditions.md).
+
 ## Beyond AI
 
 - **The Good Regulator theorem** (Conant & Ashby, 1970): *"Every good regulator of a system must be a model of that system."* To act well on a hidden problem you must model it — so to *grade* whether an agent will act well, grade its **model of the problem**, not just its final move.

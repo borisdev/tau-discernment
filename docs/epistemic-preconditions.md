@@ -33,13 +33,13 @@ A single row is not one fact; it decomposes into three pieces the written policy
 | In the `ProblemSpec`, declare that a `transfer` requires `transfer_requested == True`. | *Acting while `UNKNOWN`* becomes a checkable violation, not a judgment call. | the **action precondition** |
 | Grader penalty when an escalating action fires under `UNKNOWN`. | Lets the eval weight how severe the violation is. | the **severity** |
 
-Because the `ProblemSpec` is versioned, executable **policy-as-code**, each addition is an auditable record of what *correct* means as policy evolves.
+Because the `ProblemSpec` is versioned, executable **policy-as-code**, each addition is an auditable record of what *correct* means as policy evolves. (This *invariant / action-precondition / severity* decomposition is **Design by Contract** — Meyer's `require`/`ensure`/`invariant` — applied per tool; the **severity** weight is the FMEA severity. Prior art: [`FRAMING.md`](../FRAMING.md).)
 
 ## Systems analogy — three-valued ABAC
 
 Mechanically this is **attribute-based access control (ABAC) over the belief state**, with `ProblemSpecBelief` slots as the attributes and the SME guards as the policy. The lookup before each tool call is the policy decision point.
 
-Classic ABAC is **two-valued** (allow / deny) and assumes every attribute is *known*. Because a slot can be `UNKNOWN`, ours is **three-valued** — **allow / deny / ask** — and `UNKNOWN` triggers a clarifying question (a sensing action that resolves the slot, then re-evaluates) rather than a denial. That third outcome is the whole contribution: the extension no ABAC engine has, and exactly what the belief state buys you.
+Classic ABAC is **two-valued** (allow / deny) and assumes every attribute is *known*. Because a slot can be `UNKNOWN`, ours is **three-valued** — **allow / deny / ask** — and `UNKNOWN` triggers a clarifying question (a **sensing action** — Scherl & Levesque 1993 — that resolves the slot, then re-evaluates) rather than a denial. That third outcome is the whole contribution: the extension no ABAC engine has, and exactly what the belief state buys you.
 
 ## Runtime loop
 

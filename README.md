@@ -12,7 +12,7 @@
 
 **AI benchmark.** We extend τ³-bench from grading only the terminal database state to also grading whether the agent got on the same page with the user before acting. τ³-bench uses airline support, but the pattern is general — the same failure occurs when coding, medical, or financial agents act before they understand.
 
-**Example.** In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task says *"you don't want to be transferred to another agent."* τ³-bench scores it **PASS**, despite the agent never establishing common ground about whether the user wanted the transfer.
+**Example.** In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task says *"you don't want to be transferred to another agent."* τ³-bench scores it **PASS**, despite the agent never establishing common ground about whether the user wanted the transfer. This is a **silent false-pass**: the *don't-transfer* requirement lives only in the free-text `task_instructions`, not in the structured criteria the grader checks. ([root cause →](#root-cause-of-the-false-pass-task-instructions--grading-criteria-drift))
 
 **Research programme.** This work is part of a broader **two-phase** effort in the AI evaluation community: **Phase 1** identifies recurring failure patterns; **Phase 2** uses them to pinpoint what human domain expertise must be encoded into AI models.
 
@@ -24,34 +24,30 @@
 
 *Sequenced by dependency — each definition uses only the terms above it. The [Innovation](#innovation) section below assumes all of them.*
 
-- **Common ground / common grounding** — the shared understanding two parties create, repair, and update in dialogue; an established term (Clark 1991; [Udagawa & Aizawa, AAAI 2019](https://arxiv.org/abs/1907.03399)). Our whole target: does the agent reach *enough* of it before acting?
+- **Common ground / common grounding** — the shared understanding two parties create, repair, and update in dialogue; an established term (Clark 1991; [Udagawa & Aizawa, AAAI 2019](https://arxiv.org/abs/1907.03399)). Our whole target: does the agent reach *enough* of it before acting — Clark's **grounding criterion**, *sufficient for current purposes*?
 - **Ontic predicate** — a fact about the world, resolvable by a **database query** (e.g., `refund_eligible` — check the fare rules). τ³ already grades these.
 - **Epistemic predicate** — a fact about what the *agent knows*. **No DB query can resolve it** — the agent must **probe the user** (ask) to reduce the ambiguity in its belief. *Why the word earns its keep (counterfactual):* drop "epistemic" and "precondition" defaults to **ontic** — you query the DB, see nothing wrong, and pass task 47. "Epistemic" is the intervention: it redirects the check from the world to the agent's belief. Without the word, the failure is invisible.
 - **`ProblemSpec`** — the true, typed shape of the user's problem (ground truth; the agent never sees it). Its fields are ontic or epistemic. [see it built →](#problemspec-and-problemspecbelief)
 - **`ProblemSpecBelief`** — the agent's estimate of the `ProblemSpec`; each slot `UNKNOWN` until the agent resolves it by probing.
 - **Ambiguity** — the gap between the true `ProblemSpec` and the agent's `ProblemSpecBelief` over the fields required to safely execute the pending action.
-- **Epistemic precondition** — an epistemic predicate an action requires the agent to *know* (resolve) before it may fire. [details →](docs/epistemic-preconditions.md)
+- **Epistemic precondition** — an epistemic predicate an action requires the agent to *know* (resolve) before it may fire. Grounded prior art: knowledge preconditions (Moore 1985), knowledge-based programs (Fagin et al. 1995). [details →](docs/epistemic-preconditions.md)
 - **Underspecification** *(cause)* — an action's epistemic preconditions were never authored; the policy is incomplete.
 - **Epistemic ambiguity** *(effect)* — the agent acts while an epistemic precondition is still unresolved. Underspecification is the **cause**; epistemic ambiguity is the **symptom** our eval flags — and an expert resolves it by authoring the missing precondition.
 - **Gating / grading** — using an epistemic precondition at runtime (**gate**: ask vs. act) and in eval (**grade**: pass vs. fail). [SME-authored policy →](#sme-authored-policy-what-ambiguity-to-resolve-before-acting)
 - **PDDL** — Planning Domain Definition Language; models an action as name / parameters / preconditions / effects. We extend its preconditions with the epistemic kind (related: [PDDL-Mind](https://arxiv.org/abs/2604.17819)).
 
-Deeper theory (POMDP belief states, assistance games, reward models): [`FRAMING.md`](FRAMING.md).
+Deeper theory and full prior art (POMDP belief states, assistance games, epistemic planning, Design by Contract): [`FRAMING.md`](FRAMING.md).
 
 ## Innovation
 
 Our eval innovation: we **instrument the unobservable** — the user's latent problem and the agent's current belief — as two comparable typed objects, and treat the **gap between them as the failure signal**. That gap flags exactly where **targeted expert data** most improves AI quality.
 
 **Why it matters for AI quality.**
-- **A more precise, deterministic grader** — the next section shows a real bug it catches on a live τ³ airline task.
+- **A more precise, deterministic grader** — the `PASS` in the Example above is a real bug it catches on a live τ³ airline task.
 - **Better-behaved agents** — when a required `ProblemSpecBelief` slot is `UNKNOWN`, the agent asks rather than acting on a guess. [ProblemSpec vs ProblemSpecBelief →](#problemspec-and-problemspecbelief)
 - **Human expertise becomes reusable data** — the shape of the `ProblemSpec` lets us collect expert judgment and encode it as **human-expert data** that both grades and gates agent behavior. [SME-authored policy →](#sme-authored-policy-what-ambiguity-to-resolve-before-acting)
 
 ---
-
-## τ³-bench passes a real violation on airline task 47
-
-The `PASS` above is a **silent false-pass**: the *don't-transfer* requirement lives only in the free-text `task_instructions`, not in the structured criteria the grader checks. ([root cause →](#root-cause-of-the-false-pass-task-instructions--grading-criteria-drift))
 
 ## ProblemSpec and ProblemSpecBelief
 
