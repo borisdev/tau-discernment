@@ -1,8 +1,8 @@
 # τ-CommonGround
 
-*Does the agent establish sufficient common ground — enough shared understanding — before acting?*
+*Does the AI agent establish sufficient common ground — enough shared understanding — before acting?*
 
-**This benchmark.** We extend τ³-bench from grading only the terminal database state to also grading whether the agent reached common ground before acting. τ³'s setting is airline support, but the pattern is general — coding, medical, and financial agents fail the same way.
+**This benchmark.** We extend τ³-bench from grading only the terminal database state to also grading whether the AI agent reached common ground before acting. τ³'s setting is airline support, but the pattern is general — coding, medical, and financial agents fail the same way.
 
 ## Motivation
 
