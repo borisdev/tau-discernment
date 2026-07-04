@@ -14,13 +14,14 @@
 
 **Example.** In our test run, Claude Haiku correctly refuses an ineligible refund, then transfers the user to a human — even though the task says *"you don't want to be transferred to another agent."* τ³-bench scores it **PASS**, despite the agent never establishing common ground about whether the user wanted the transfer. This is a **silent false-pass**: the *don't-transfer* requirement lives only in the free-text `task_instructions`, not in the structured criteria the grader checks. ([root cause →](#root-cause-of-the-false-pass-task-instructions--grading-criteria-drift))
 
-**Research programme.** This work is part of a broader **two-phase** effort in the AI evaluation community: **Phase 1** identifies recurring failure patterns; **Phase 2** uses them to pinpoint what human domain expertise must be encoded into AI models.
+**Research programme.** This work is part of a broader effort in the AI evaluation community: use **failure-pattern analysis** to find where an agent needs human domain expertise, encode that expertise as explicit rules, and only then build agents that can act on it.
 
-> **Our two phases.**
-> 1. **Flag grader ambiguity** — use evals (exploratory data analysis) to surface actions the outcome grader can't score, because its criteria never covered them.
-> 2. **Resolve grader ambiguity** — human subject-matter experts author the missing **action-precondition rule**, which then drives both **grading** and **gating**.
+> **Three phases — we deliver 1–2; the AI builder does 3:**
+> 1. **Flag — the grader's blind spot.** Evals surface where the outcome grader is ignorant of the user's mental model: it passes an action even though an epistemic requirement went unmet. Detection only.
+> 2. **Resolve — author the rules.** Human subject-matter experts write explicit **action-precondition rules** that shape the `ProblemSpec` / `ProblemSpecBelief` — defining *what the agent must know* before an action, so ambiguity now **has a chance** to be resolved. Output: a grader that can finally score the epistemic requirement (**grading**).
+> 3. **Build — reduce ambiguity at runtime.** Only now can AI builders add agent mechanisms to actually reduce it: ask a clarifying question, **gate** the action until the belief is resolved.
 >
-> Two concrete examples:
+> Two concrete examples (Phases 1–2):
 > - **Unrequested transfer (task 47).** *Flag:* the agent transfers the user to a human; the grader sees an unchanged DB and passes it — though the task said *"don't transfer."* *Resolve:* an SME adds `transfer_to_human` requires `belief.transfer_requested == True`, and it now grades **FAIL**.
 > - **Cancel without confirmation.** *Flag:* the agent cancels a booking after the user only vented (*"this is ridiculous"*); the cancellation looks valid, so the grader passes it. *Resolve:* an SME adds `cancel_reservation` requires `belief.cancel_confirmed == True`.
 
