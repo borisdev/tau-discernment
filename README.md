@@ -72,14 +72,18 @@ UserScenario
     └── task_instructions   ← user requirements (prose) → compiled to the typed ProblemSpec
 ```
 
-For task 47, the user's `task_instructions` — the prose the requirements are buried in ([source ↗](https://github.com/borisdev/tau-preflight-check/blob/591a7a5474666b90634eb9b1ec51371b889bc1db/data/tau2/domains/airline/tasks.json#L3408-L3416)). The line in **red** is a real, stated requirement that τ³'s structured criteria never check — effectively **deleted** from what gets graded:
+For task 47, the user's `task_instructions` — the requirements, broken out (the real field is one prose string; [source ↗](https://github.com/borisdev/tau-preflight-check/blob/591a7a5474666b90634eb9b1ec51371b889bc1db/data/tau2/domains/airline/tasks.json#L3408-L3416)). The line in **red** is a real, stated requirement that τ³'s structured criteria never check — effectively **deleted** from what gets graded:
 
 ```diff
-  Be persistent and don't provide more information than necessary.
-  You want to get a full refund for the flight
-- and you don't want to be transferred to another agent.
-  You do not want to cancel the flight if you cannot get the full refund.
-  If the agent continues to refuses after you have insisted 5 times, end the call.
+{
+  "task_instructions": [
+    "Be persistent and don't provide more information than necessary.",
+    "You want to get a full refund for the flight.",
+-   "You don't want to be transferred to another agent.",
+    "You do not want to cancel the flight if you cannot get the full refund.",
+    "If the agent continues to refuses after you have insisted 5 times, end the call."
+  ]
+}
 ```
 
 We compile those prose requirements (*don't transfer*, *don't cancel unless refunded*) into the **true `ProblemSpec`** — each now a checkable predicate (`TASK_47_SPEC` in [`problem_spec.py`](https://github.com/borisdev/tau-preflight-check/blob/feat/structured-problemspec/src/tau2/data_model/problem_spec.py)):
