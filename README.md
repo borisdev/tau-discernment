@@ -2,8 +2,6 @@
 
 *Before an AI agent fires a consequential action, does it run a preflight check that probes the user's unobserved understanding and preferences — so it doesn't hurt or hassle the user?*
 
-τ-PreflightCheck makes that question **gradeable**: beyond τ³'s terminal database state, it scores whether the agent established the user's action-relevant requirements before firing the action.
-
 ## Motivation
 
 **A worked failure.** We ran Claude Haiku on τ³ airline task 47 and hit *two* failures at once. The agent correctly refused an ineligible refund, then **transferred the user to a human anyway — without confirming they wanted it** (it skipped a preflight check on a stated preference). And **τ³ scored it PASS**: the transfer left the database unchanged, and the user's *don't-transfer* requirement sits in free-text `task_instructions`, not in the grader's criteria. The overlooked requirement is the red line:
