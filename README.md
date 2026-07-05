@@ -6,15 +6,29 @@
 
 ## Motivation
 
-We ran Claude Haiku on τ³ airline task 47 and found a grading failure:
-- **The user's latent requirement:** *don't transfer me to another agent* (stated in the task).
-- **What the agent did:** correctly refused an ineligible refund — then **transferred the user to a human anyway**, never confirming they wanted it.
-- **What τ³-bench scored:** **PASS** — the transfer left the database unchanged, and the *don't-transfer* rule sits in free-text `task_instructions`, not in the grader's structured criteria.
-- **The problem:** a real, stated user requirement was violated — invisibly. A **silent false-pass**. ([root cause: `task_instructions` ↔ grading-criteria drift →](docs/pilot-details.md#root-cause-task_instructions--grading-criteria-drift))
+**A worked failure.** We ran Claude Haiku on τ³ airline task 47 and hit *two* failures at once. The agent correctly refused an ineligible refund, then **transferred the user to a human anyway — without confirming they wanted it** (it skipped a preflight check on a stated preference). And **τ³ scored it PASS**: the transfer left the database unchanged, and the user's *don't-transfer* requirement sits in free-text `task_instructions`, not in the grader's criteria. The overlooked requirement is the red line:
 
-**How surfacing these failure patterns might help AI quality in customer-service.** These failures turn into concrete questions for human subject-matter experts: *for a given action, what must an AI agent sufficiently understand about its user's state of mind before committing — so it doesn't harm or inconvenience the user?* To illustrate, a table of **synthetic SME answers** to the question — *what must the customer-service agent establish about the customer's state of mind before taking an action?*
+```diff
+{
+  "task_instructions": [
+    "Be persistent and don't provide more information than necessary.",
+    "You want to get a full refund for the flight.",
+-   "You don't want to be transferred to another agent.",
+    "You do not want to cancel the flight if you cannot get the full refund.",
+    "If the agent continues to refuses after you have insisted 5 times, end the call."
+  ]
+}
+```
 
-| Agent action | SME Expertise: Customer state-of-mind pre-conditions | Example failure caught |
+**What we grade.** τ-PreflightCheck extends τ³ to catch this pattern — an agent disregarding the user's personal requirements or preconditions on an action. The analogy is medical: an AI that *effectively* fixes the user's problem can still cause harm through the **side effects** of its actions, and **each user tolerates different side effects**. τ³ grades whether the agent solved the problem; we grade whether it **respected the user's limits while doing so** — i.e., whether it ran an action preflight check before committing.
+
+**Why it matters downstream.** When τ³'s grader ignores a user requirement stated only in prose, that is a **signal**: it marks an action where a subject-matter expert could author an explicit preflight policy. Surfacing these failures turns them into concrete questions for SMEs, and their answers into customer-service **PolicyPacks** of per-action preflight checks.
+
+### Preflight-check failures signal SME-expertise gaps
+
+To illustrate, a table of **synthetic SME protocols** answering: *what must a customer-service agent establish about the user before taking action X?*
+
+| Agent action | SME-elicited preflight protocol | Example failure caught |
 |---|---|---|
 | **Transfer to human agent** | Transfer is required or explicitly requested; reason explained; user consents where appropriate | Agent gives up and transfers a user who asked not to be transferred (**task 47**) |
 | **Cancel reservation** | Correct reservation identified; cancellation scope confirmed; refund/credit terms explained; user explicitly confirms cancellation | User was only asking about options, but agent cancels |
@@ -24,7 +38,7 @@ We ran Claude Haiku on τ³ airline task 47 and found a grading failure:
 
 → Full illustrative checklist (~25 airline actions, with the anti-circularity caveat): [`docs/preflight-checklist-example.md`](docs/preflight-checklist-example.md)
 
-*("Sufficiently understand the user's state of mind" = the user's **epistemic state** — their model of reality. Where it diverges from the agent's, for a specific action, harm can follow.)*
+*(What must the agent "establish about the user"? Their goal, preferences, consent, and — where a material consequence is at stake — their **understanding** of it. Only that last one is the user's model of reality; task 47 is **consent**. Where the agent acts without establishing the relevant one, harm or hassle can follow.)*
 
 <details>
 <summary><b>Glossary</b> — key terms, sequenced by dependency (click to expand)</summary>
