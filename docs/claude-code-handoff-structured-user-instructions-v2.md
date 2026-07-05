@@ -2,6 +2,8 @@
 
 ## Purpose
 
+> **Note — implementation simplified since this handoff.** Instead of a `StructuredUserInstructionsV2` wrapper class, we add one optional `user_preflight_requirements: StructuredUserRequirements | None = None` field directly to τ³'s own `StructuredUserInstructions` (see README + [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1)). The rest of this document is the historical spec, kept as written.
+
 Refactor the current `ProblemSpec` work into a smaller, cleaner experiment that stays close to τ³-bench.
 
 The immediate goal is **not** to build the full future SME-authored preflight-policy system.

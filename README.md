@@ -61,7 +61,7 @@ Deeper theory and full prior art (POMDP belief states, assistance games, epistem
 
 ## Making τ³'s implicit requirements explicit
 
-τ³ buries the user's requirements in one prose field, `task_instructions`, and the grader checks only a structured *subset* of the scenario — so a requirement left in the prose is **invisible to grading**. τ-PreflightCheck lifts it into an **explicit, typed** field the grader checks. Watch the *same* requirement move from implicit prose (deleted from grading) to explicit type (now graded):
+τ³ buries the user's requirements in one prose field, `task_instructions`, and the grader checks only a structured *subset* of the scenario — so a requirement left in the prose is **invisible to grading**. τ-PreflightCheck lifts it into an **explicit, typed** field the grader checks — one optional field, `user_preflight_requirements`, added to τ³'s own `StructuredUserInstructions` (the prose stays byte-for-byte). Watch the *same* requirement move from implicit prose (deleted from grading) to explicit type (now graded):
 
 **Implicit — buried in prose.** Task 47's `task_instructions`, verbatim ([source ↗](https://github.com/borisdev/tau-preflight-check-bench/blob/591a7a5474666b90634eb9b1ec51371b889bc1db/data/tau2/domains/airline/tasks.json#L3408-L3416)). The **red** line is a stated requirement τ³'s criteria never check — effectively **deleted** from what's graded:
 
@@ -77,7 +77,7 @@ Deeper theory and full prior art (POMDP belief states, assistance games, epistem
 }
 ```
 
-**Explicit — lifted into a typed, gradeable field** (`structured_requirements`), with the *correct* semantics and provenance (each rule traces to its `source_quote` — the red line above):
+**Explicit — lifted into a typed, gradeable field** (`user_preflight_requirements`, one optional field we add to τ³'s `StructuredUserInstructions`), with the *correct* semantics and provenance (each rule traces to its `source_quote` — the red line above):
 
 ```diff
 + StructuredUserRequirements(
@@ -99,7 +99,7 @@ Deeper theory and full prior art (POMDP belief states, assistance games, epistem
 
 Two semantics a looser encoding gets wrong: **`ConsentStatus.DENIED`** means the user *explicitly refused* — not merely that no transfer was requested; and cancellation is a **conditional** authorization — the *world* decides whether `full_refund_available` holds, so `refund_eligible` is a world fact, not the user's requirement. Every requirement carries a `source_quote`, so we can prove we **made an existing stated rule gradeable, not invented one.**
 
-**Paired re-scoring — same trajectory, two graders.** V2 changes nothing the agent sees or the simulator says, so we score the *same recorded trajectory* two ways; any verdict difference is attributable to **what the grader can represent, not to a changed conversation**:
+**Paired re-scoring — same trajectory, two graders.** Adding the optional `user_preflight_requirements` field changes nothing the agent sees or the simulator says, so we score the *same recorded trajectory* two ways; any verdict difference is attributable to **what the grader can represent, not to a changed conversation**:
 
 ```text
 same task · same simulator prose · same trajectory · same agent output
@@ -162,7 +162,7 @@ Reproduce: `run_airline.py` → `analyze_beliefs.py` → `verify_findings.py`.
 
 ## Implementation status (issue #1)
 
-The `StructuredUserInstructionsV2` / `StructuredUserRequirements` types and a `StructuredRequirementsEvaluator` — the first slice that flips task 47 `PASS → FAIL` — are merged into `main`; the related belief-layer design (a deferred later phase) is in [`PROBLEM_BELIEF_SPEC.md`](PROBLEM_BELIEF_SPEC.md). `StructuredUserInstructionsV2` preserves the original `task_instructions` prose byte-for-byte and adds the typed `structured_requirements` the grader checks — but that typed field is **not** given to the agent, so the paired re-scoring measurement is not leaked. Tracked in [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1).
+We add **one optional field, `user_preflight_requirements: StructuredUserRequirements | None = None`, directly to τ³'s own `StructuredUserInstructions`** — no wrapper class. The `StructuredUserRequirements` type and its supporting types (`ConsentStatus`, `ConditionalAuthorization`, `TaskConstraint`) live in [`src/tau2/data_model/structured_requirements.py`](https://github.com/borisdev/tau-preflight-check-bench/blob/main/src/tau2/data_model/structured_requirements.py), and a `StructuredRequirementsEvaluator` grades against them — the first slice that flips task 47 `PASS → FAIL` — all merged into `main`; the related belief-layer design (a deferred later phase) is in [`PROBLEM_BELIEF_SPEC.md`](PROBLEM_BELIEF_SPEC.md). The field is optional (default `None`), so every existing task still loads and the `task_instructions` prose is untouched byte-for-byte — but the typed field is **not** given to the agent, so the paired re-scoring measurement is not leaked. Tracked in [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1).
 
 ## What about τ²-Bench / dual control?
 
@@ -175,7 +175,7 @@ The `StructuredUserInstructionsV2` / `StructuredUserRequirements` types and a `S
 - **Worked example:** [`poc/CASE_STUDY.md`](poc/CASE_STUDY.md) — task 47 with verbatim runtime objects and a turn-by-turn belief table.
 - **Per-task detail:** [`poc/FINDINGS.md`](poc/FINDINGS.md) — the table above with evidence and the verifier output.
 - **Code / data:** [`poc/`](poc/) scripts and JSON artifacts; readable transcripts in [`poc/traces/`](poc/traces/).
-- **Refactor:** [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1) · merged to `main` (V2 refactor).
+- **Refactor:** [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1) · merged to `main` (added the optional `user_preflight_requirements` field).
 - **Provenance:** [`VENDOR.md`](VENDOR.md) · [`LICENSE`](LICENSE) (MIT, Sierra Research) · [`README_upstream_tau3.md`](README_upstream_tau3.md).
 
 ## Limitations

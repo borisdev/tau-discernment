@@ -3,8 +3,9 @@
 > **Status — deferred later phase.** This document designs the **agent-side belief-tracking
 > layer**: a per-turn tracker of the agent's evolving belief about the user's problem. It is
 > **not** the current pilot. The current pilot is a **paired re-scoring experiment**:
-> [`StructuredUserInstructionsV2`](README.md) preserves τ³'s original `task_instructions` prose
-> byte-for-byte and adds a typed `StructuredUserRequirements` field, and a
+> we add one optional [`user_preflight_requirements`](README.md) field (a typed
+> `StructuredUserRequirements`) to τ³'s own `StructuredUserInstructions`, leaving the original
+> `task_instructions` prose byte-for-byte unchanged, and a
 > `StructuredRequirementsEvaluator` re-scores the *same recorded trajectory* the τ³ grader already
 > scored — needing only the **grader's** view, not the agent's belief. The belief tracker below
 > (and its `ProblemSpecBelief` schema) is a valuable follow-on, but nothing in the pilot depends
@@ -71,7 +72,7 @@ that has never been made explicit or scored — in any version through τ³.**
 
 Each τ³ task hand-authors two artifacts: the free-text scenario (`user_scenario.instructions.task_instructions`) and the structured `evaluation_criteria` (`reward_basis` = DB + COMMUNICATE + assertions). They are separate, so they can drift. On task 47 the scenario states *"you don't want to be transferred"*; the `evaluation_criteria` encode no no-transfer predicate; the grader grades the criteria, so the transfer passes.
 
-A single typed requirement spec — `StructuredUserRequirements`, carried inside `StructuredUserInstructionsV2` — removes the drift by construction: derive the grading predicates from the same typed source that structures the scenario, and the two cannot disagree — the hand-authored `evaluation_criteria` become a compiled view, not a second artifact. This bounds *internal consistency* (scenario and grading agree); it does not certify the spec encodes the *right* constraints (the ontology-correctness problem, separate).
+A single typed requirement spec — `StructuredUserRequirements`, carried in the optional `user_preflight_requirements` field on τ³'s `StructuredUserInstructions` — removes the drift by construction: derive the grading predicates from the same typed source that structures the scenario, and the two cannot disagree — the hand-authored `evaluation_criteria` become a compiled view, not a second artifact. This bounds *internal consistency* (scenario and grading agree); it does not certify the spec encodes the *right* constraints (the ontology-correctness problem, separate).
 
 ---
 

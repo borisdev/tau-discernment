@@ -24,7 +24,7 @@ Existing agent benchmarks evaluate on terminal success — did an API tool fire 
 - **Checklists / Design by Contract / FMEA / ABAC** — the safety and policy lineage.
 
 ## 3. Framework
-- `StructuredUserRequirements` (typed, action-scoped requirements lifted from `task_instructions`, checked by the grader) carried inside `StructuredUserInstructionsV2` alongside the unchanged prose. Agent-side belief tracking (the belief state; slots `UNKNOWN` until probed) is a deferred later phase.
+- `StructuredUserRequirements` (typed, action-scoped requirements lifted from `task_instructions`, checked by the grader) carried in one optional `user_preflight_requirements` field added to τ³'s `StructuredUserInstructions`, alongside the unchanged prose. Agent-side belief tracking (the belief state; slots `UNKNOWN` until probed) is a deferred later phase.
 - **Ontic vs epistemic** preconditions (DB-query vs probe).
 - The **preflight check**: the per-action checklist of epistemic preconditions; three-valued **allow / deny / ask**.
 - Vocabulary discipline: *ignorance* (missing field) vs *epistemic ambiguity* (known field, `UNKNOWN` value) vs τ³ *ambiguous instructions*.
