@@ -2,8 +2,7 @@
 
 τ³ already gives each simulated user a semi-structured `StructuredUserInstructions`
 (see `tau2.data_model.tasks`). Its `task_instructions` field, however, is overloaded
-prose: it mixes the user's goal, constraints, preferences, consent/refusal, conditional
-authorization, and simulator-only behaviour. The τ³ grader is DB/COMMUNICATE-oriented and
+prose: it mixes the user's goal, constraints, preferences, and consent/refusal. The τ³ grader is DB/COMMUNICATE-oriented and
 has no predicate for most of those requirements, so a stated requirement like "don't
 transfer me" is *revealed to the simulator but missed by the grader* (task 47's silent
 false-pass).
@@ -14,7 +13,7 @@ optional `user_preflight_requirements` field, so the simulator prose (`task_inst
 stays byte-for-byte unchanged and every existing task still loads. Re-scoring the same
 trajectory with both graders isolates one variable: what the grader can represent.
 
-Scope discipline (non-goals, per handoff): this is the *smallest action-relevant* model
+Scope discipline (non-goals): this is the *smallest action-relevant* model
 needed to grade requirements already recoverable from τ³'s own scenario prose. It is not a
 universal user model, not a logic engine, and not a `PreflightPolicyPack`. Every typed
 requirement carries provenance (`source_field` + `source_quote`) that must be a verbatim
@@ -47,18 +46,6 @@ class ConsentStatus(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ConditionalAuthorization(BaseModel):
-    """An action the user permits *only* when a condition holds.
-
-    Example (task 47): cancel is authorized only if a full refund is available. The
-    condition is a world/policy fact resolved later — it is NOT itself a user-state fact
-    (contrast `refund_eligible`, which is a world fact and never a user requirement).
-    """
-
-    action: str
-    condition: str
-
-
 class TaskConstraint(BaseModel):
     """A single gradeable, task-local requirement with provenance back to the source prose.
 
@@ -74,41 +61,21 @@ class TaskConstraint(BaseModel):
     source_quote: str
 
 
-class SimulatorPolicy(BaseModel):
-    """Simulator-only behaviour, kept *separate* from user authorization.
-
-    These control how the simulated user speaks (incremental disclosure, persistence,
-    termination) — they are NOT things the grader treats as user consent. Optional and not
-    rendered into any prompt during the pilot (we never regenerate simulator prose from the
-    typed requirements).
-    """
-
-    reveal_incrementally: bool = False
-    persistence_limit: int | None = None
-    end_after_persistence_limit: bool = False
-
-
 class UserPreflightRequirements(BaseModel):
     """The typed, task-local requirements derived only from the existing τ³ scenario.
 
     - `goal`         — the user's objective (prose is fine; not itself a gradeable predicate).
     - `preferences`  — soft, non-binding wants.
-    - `authorizations` — per-action consent: an explicit `ConsentStatus` or a
-                         `ConditionalAuthorization`. This carries the *semantics* the grader
-                         reads (DENIED vs conditional vs granted).
+    - `authorizations` — per-action consent (`ConsentStatus`): the grader reads `DENIED`
+                         (an explicit refusal) as a prohibition.
     - `constraints`  — the gradeable units with provenance; each references an `action` that
                        the grader cross-checks against `authorizations`.
-    - `simulator_policy` — optional simulator-only controls, kept separate from the graded
-                         authorizations (never rendered into the simulator prose).
     """
 
     goal: str | None = None
     preferences: list[str] = Field(default_factory=list)
-    authorizations: dict[str, ConsentStatus | ConditionalAuthorization] = Field(
-        default_factory=dict
-    )
+    authorizations: dict[str, ConsentStatus] = Field(default_factory=dict)
     constraints: list[TaskConstraint] = Field(default_factory=list)
-    simulator_policy: SimulatorPolicy | None = None
 
 
 def verify_provenance(instructions) -> list[str]:
@@ -120,7 +87,7 @@ def verify_provenance(instructions) -> list[str]:
     `user_preflight_requirements` attribute. If no requirements are attached, there is
     nothing to verify and the result is empty.
 
-    This is the verification discipline from the handoff: reject any requirement whose quote
+    Verification discipline: reject any requirement whose quote
     cannot be recovered from the real task text.
     """
     requirements = getattr(instructions, "user_preflight_requirements", None)

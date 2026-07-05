@@ -1,4 +1,4 @@
-"""Tests for the preflight preflight-requirements pilot (handoff Phase 1).
+"""Tests for the preflight-requirements pilot (Phase 1).
 
 The typed requirements now live in `tau2.data_model.preflight_requirements` and are attached
 to τ³'s own `StructuredUserInstructions` via the optional `user_preflight_requirements` field
@@ -8,10 +8,9 @@ Covers the acceptance criteria:
   * Attaching `user_preflight_requirements` leaves the rendered simulator prose (`__str__`) and
     `task_instructions` byte-for-byte unchanged (backward compatible; every task still loads).
   * Every constraint's source_quote is verbatim-recoverable from the source prose.
-  * The semantic distinctions (DENIED authorization; conditional cancel; refund is a world
-    fact) are represented, not collapsed.
+  * The DENIED authorization is represented as an explicit refusal, not collapsed to "not requested".
   * The structured grader flips task 47 PASS -> FAIL on the unwanted transfer, while τ³ PASS.
-  * Clean trajectories stay clean (no false positives; conditional cancel does not misfire).
+  * Clean trajectories stay clean (no false positives).
 """
 
 from __future__ import annotations
@@ -20,7 +19,6 @@ import json
 
 from tau2.data_model.fixtures_preflight import build_task_47, get_preflight_fixture
 from tau2.data_model.preflight_requirements import (
-    ConditionalAuthorization,
     ConsentStatus,
     UserPreflightRequirements,
     TaskConstraint,
@@ -110,15 +108,6 @@ def test_transfer_is_denied_not_merely_unrequested():
     assert auths["transfer_to_human_agents"] == ConsentStatus.DENIED
 
 
-def test_cancel_is_conditional_authorization_on_full_refund():
-    cancel = build_task_47().user_preflight_requirements.authorizations[
-        "cancel_reservation"
-    ]
-    assert isinstance(cancel, ConditionalAuthorization)
-    assert cancel.action == "cancel_reservation"
-    assert cancel.condition == "full_refund_available"
-
-
 # --- The grader flip ------------------------------------------------------------
 
 
@@ -148,23 +137,6 @@ def test_structured_grader_flips_task_47_to_fail_on_transfer():
     assert v.requirement_kind == "denied_authorization"
     assert v.turn == 12  # the transfer_to_human_agents call in the recorded trajectory
     assert "you don't want to be transferred to another agent" == v.source_quote
-
-
-def test_conditional_cancel_does_not_misfire_when_cancel_absent():
-    # Task 47's trajectory never calls cancel_reservation, so the conditional constraint
-    # must NOT produce a violation (clean-by-construction).
-    instructions = build_task_47()
-    trajectories = json.loads(
-        (DATA_DIR.parent / "poc" / "trajectories.json").read_text()
-    )
-    traj = next(t for t in trajectories if str(t["task_id"]) == "47")
-    result = PreflightRequirementsEvaluator().evaluate_instructions(
-        traj["trajectory"], instructions
-    )
-    cancel_violations = [
-        v for v in result.violations if v.action == "cancel_reservation"
-    ]
-    assert cancel_violations == []
 
 
 def test_clean_trajectory_produces_no_violations():

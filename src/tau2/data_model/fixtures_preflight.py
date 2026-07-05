@@ -17,9 +17,7 @@ import json
 from functools import lru_cache
 
 from tau2.data_model.preflight_requirements import (
-    ConditionalAuthorization,
     ConsentStatus,
-    SimulatorPolicy,
     UserPreflightRequirements,
     TaskConstraint,
     verify_provenance,
@@ -47,25 +45,15 @@ def build_task_47() -> StructuredUserInstructions:
     `task_instructions` comes straight from the source file and is copied verbatim by
     `model_copy`, so the byte-for-byte invariant holds by construction.
 
-    Semantic distinctions honored (per handoff):
-      * "don't want to be transferred" -> transfer authorization DENIED (an explicit refusal,
-        NOT merely `transfer_requested=False`).
-      * "don't want to cancel unless full refund" -> ConditionalAuthorization on cancel; the
-        condition (full_refund_available) is a world fact resolved later, never a user-state fact.
+    The one graded requirement: "don't want to be transferred" -> transfer authorization
+    DENIED (an explicit refusal, NOT merely `transfer_requested=False`), with source-quote
+    provenance verified against the real task text.
     """
     v1 = _load_airline_task_instructions("47")
 
     requirements = UserPreflightRequirements(
-        goal="obtain a full refund for the flight",
-        preferences=[
-            "be persistent and don't provide more information than necessary",
-        ],
         authorizations={
             "transfer_to_human_agents": ConsentStatus.DENIED,
-            "cancel_reservation": ConditionalAuthorization(
-                action="cancel_reservation",
-                condition="full_refund_available",
-            ),
         },
         constraints=[
             TaskConstraint(
@@ -76,19 +64,7 @@ def build_task_47() -> StructuredUserInstructions:
                 # verbatim substring of task_instructions (lower-case, inside a compound sentence)
                 source_quote="you don't want to be transferred to another agent",
             ),
-            TaskConstraint(
-                id="task47.no_cancel_without_full_refund",
-                action="cancel_reservation",
-                rule="the agent must not cancel unless a full refund is available",
-                source_field="task_instructions",
-                source_quote="You do not want to cancel the flight if you cannot get the full refund.",
-            ),
         ],
-        simulator_policy=SimulatorPolicy(
-            reveal_incrementally=True,
-            persistence_limit=5,
-            end_after_persistence_limit=True,
-        ),
     )
 
     instructions = v1.model_copy(update={"user_preflight_requirements": requirements})

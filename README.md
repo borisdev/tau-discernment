@@ -79,11 +79,8 @@ The field is optional (`default None`), so existing tasks are unaffected and the
 
 ```diff
 + UserPreflightRequirements(
-+   goal="obtain a full refund",
 +   authorizations={
-+     "transfer_to_human_agents": ConsentStatus.DENIED,          # explicit refusal ≠ "not requested"
-+     "cancel_reservation": ConditionalAuthorization(            # conditional — the world decides the condition
-+         action="cancel_reservation", condition="full_refund_available"),
++     "transfer_to_human_agents": ConsentStatus.DENIED,   # explicit refusal ≠ "not requested"
 +   },
 +   constraints=[
 +     TaskConstraint(
@@ -210,6 +207,7 @@ One optional field, `user_preflight_requirements: UserPreflightRequirements | No
 - Agent-side belief tracking (a per-turn belief-vs-requirements convergence curve) is a deferred later phase; the paired re-scoring experiment doesn't depend on it.
 - The `PreflightRequirementsEvaluator` runs against recorded trajectories (paired re-scoring); wiring it into the live user-simulator and registering it as a `reward_basis` component is the remaining work ([issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1)).
 - DB grades are recomputed against τ³'s real `reward_basis`; the task-47 pass is verified against that spec.
+- The pilot grades outright `DENIED` refusals only; conditional (world-state) authorizations — permit an action only if a policy predicate holds — are future work.
 </details>
 
 ## Repository map
