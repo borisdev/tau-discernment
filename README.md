@@ -69,7 +69,7 @@ UserScenario
     ├── reason_for_call
     ├── known_info
     ├── unknown_info
-    └── task_instructions   ← the requirements, in prose
+    └── task_instructions   ← user requirements (prose) → compiled to the typed ProblemSpec
 ```
 
 For task 47, the user's `task_instructions` — the prose the requirements are buried in ([source ↗](https://github.com/borisdev/tau-preflight-check/blob/591a7a5474666b90634eb9b1ec51371b889bc1db/data/tau2/domains/airline/tasks.json#L3408-L3416)). The line in **red** is a real, stated requirement that τ³'s structured criteria never check — effectively **deleted** from what gets graded:
