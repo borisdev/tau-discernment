@@ -53,7 +53,7 @@ We ran Claude Haiku on τ³-bench airline task 47 and flag an **in-spirit failur
 
 Like a medical doctor treating a patient, an AI agent can *effectively* solve the customer's problem yet still harm them through the **side effects** of its actions — and **each customer tolerates different side effects** (task 47: an unwanted transfer). τ³ grades effectiveness — *did the agent reach the target outcome?* We add a second dimension — *did it respect the customer's stated limits while doing so?* (Whether the agent actively *probes* for unstated limits is the later belief-tracking phase.)
 
-## Scope
+## Release scope
 
 This release grades whether the agent honored the user's **stated** constraints on *how* an action is done (task 47's *don't-transfer*) — **not** task completion (τ³'s job), and **not** probing the *unknown* requirements the user never stated ([the deferred belief-tracking phase →](#impact-on-ai-quality-eliciting-sme-expertise-and-belief-tracking)).
 
