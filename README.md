@@ -1,8 +1,8 @@
 # τ-PreflightCheck
 
-[![CI](https://github.com/borisdev/tau-bench-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/borisdev/tau-bench-audit/actions/workflows/ci.yml)
+[![CI](https://github.com/borisdev/tau-preflight-check-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/borisdev/tau-preflight-check-bench/actions/workflows/ci.yml)
 
-*τ-PreflightCheck extends τ-bench by grading not only whether the agent completes the task, but also whether it respects **each user’s specific requirements on consequential actions**. The downstream aim is to surface failures that reveal where human expertise is needed to define explicit preflight-policy checks on pending actions in the face of ambiguity — “did the user really want to be escalated?”*
+*τ-PreflightCheck extends τ-bench: it grades not only whether the agent completes the task, but also whether it honored **each user’s individual, latent requirements**. τ-bench already holds the agent to the domain **[policy](data/tau2/domains/airline/policy.md)** — the general rules that apply to every user — but a user’s *latent* preferences (e.g. “don’t transfer me”) live only in her profile and are **never graded**. That’s the gap we close.*
 
 <details>
 <summary><b>Glossary</b> — key terms, sequenced by dependency (click to expand)</summary>
@@ -65,7 +65,7 @@ We make the unobservable **checkable**: the user's latent requirements become a 
 
 ### Existing in τ³ — implicit, in prose
 
-τ³ keeps the user's requirements in one prose field, `task_instructions`, and grades only a structured subset — so a requirement left in prose is invisible to grading. The buried line from task 47 (shown in full under *Motivation* above; [source ↗](https://github.com/borisdev/tau-bench-audit/blob/591a7a5474666b90634eb9b1ec51371b889bc1db/data/tau2/domains/airline/tasks.json#L3408-L3416)):
+τ³ keeps the user's requirements in one prose field, `task_instructions`, and grades only a structured subset — so a requirement left in prose is invisible to grading. The buried line from task 47 (shown in full under *Motivation* above; [source ↗](https://github.com/borisdev/tau-preflight-check-bench/blob/591a7a5474666b90634eb9b1ec51371b889bc1db/data/tau2/domains/airline/tasks.json#L3408-L3416)):
 
 ```diff
   "task_instructions": [
@@ -87,7 +87,7 @@ We add one optional field to τ³'s own `StructuredUserInstructions` (no wrapper
 +     user_preflight_requirements: UserPreflightRequirements | None = None   # NEW — typed, grader-visible
 ```
 
-The field is optional (`default None`), so existing tasks are unaffected and the prose is unchanged. Two supporting files: [`preflight_requirements.py`](https://github.com/borisdev/tau-bench-audit/blob/main/src/tau2/data_model/preflight_requirements.py) (the types) and [`PreflightRequirementsEvaluator`](https://github.com/borisdev/tau-bench-audit/blob/main/src/tau2/evaluator/preflight_requirements_evaluator.py) (reads the field). Populate it for task 47 — the same requirement, typed, with provenance (each rule cites its `source_quote`, the red line above):
+The field is optional (`default None`), so existing tasks are unaffected and the prose is unchanged. Two supporting files: [`preflight_requirements.py`](https://github.com/borisdev/tau-preflight-check-bench/blob/main/src/tau2/data_model/preflight_requirements.py) (the types) and [`PreflightRequirementsEvaluator`](https://github.com/borisdev/tau-preflight-check-bench/blob/main/src/tau2/evaluator/preflight_requirements_evaluator.py) (reads the field). Populate it for task 47 — the same requirement, typed, with provenance (each rule cites its `source_quote`, the red line above):
 
 ```diff
 + UserPreflightRequirements(
@@ -226,7 +226,7 @@ Honest boundary: Phase-1 flags the *violated action* as a **proxy** for the miss
 <details>
 <summary><b>What's the implementation status?</b></summary>
 
-One optional field, `user_preflight_requirements: UserPreflightRequirements | None = None`, added directly to τ³'s `StructuredUserInstructions` (no wrapper). Types in [`preflight_requirements.py`](https://github.com/borisdev/tau-bench-audit/blob/main/src/tau2/data_model/preflight_requirements.py); graded by `PreflightRequirementsEvaluator`; the first slice flips task 47 `PASS → FAIL`; merged to `main`. Optional/default-`None` → existing tasks load unchanged and the prose is byte-for-byte; the field is not shown to the agent (no leakage). Remaining work — wire into the live simulator and register as a `reward_basis` component — is [issue #1](https://github.com/borisdev/tau-bench-audit/issues/1).
+One optional field, `user_preflight_requirements: UserPreflightRequirements | None = None`, added directly to τ³'s `StructuredUserInstructions` (no wrapper). Types in [`preflight_requirements.py`](https://github.com/borisdev/tau-preflight-check-bench/blob/main/src/tau2/data_model/preflight_requirements.py); graded by `PreflightRequirementsEvaluator`; the first slice flips task 47 `PASS → FAIL`; merged to `main`. Optional/default-`None` → existing tasks load unchanged and the prose is byte-for-byte; the field is not shown to the agent (no leakage). Remaining work — wire into the live simulator and register as a `reward_basis` component — is [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1).
 </details>
 
 <details>
@@ -252,7 +252,7 @@ Where it lands instead: a global invariant like *"under uncertainty, default to 
 
 - Six tasks, one agent model, airline (single-control) only — a pilot, not a measured rate.
 - Agent-side belief tracking (a per-turn belief-vs-requirements convergence curve) is a deferred later phase; the paired re-scoring experiment doesn't depend on it.
-- The `PreflightRequirementsEvaluator` runs against recorded trajectories (paired re-scoring); wiring it into the live user-simulator and registering it as a `reward_basis` component is the remaining work ([issue #1](https://github.com/borisdev/tau-bench-audit/issues/1)).
+- The `PreflightRequirementsEvaluator` runs against recorded trajectories (paired re-scoring); wiring it into the live user-simulator and registering it as a `reward_basis` component is the remaining work ([issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1)).
 - DB grades are recomputed against τ³'s real `reward_basis`; the task-47 pass is verified against that spec.
 - The pilot grades outright prohibitions only; conditional (world-state) authorizations — permit an action only if a policy predicate holds — are future work.
 </details>
@@ -264,7 +264,7 @@ Where it lands instead: a global invariant like *"under uncertainty, default to 
 | Run | [`poc/run_airline.py`](poc/run_airline.py) | Haiku agent vs. Sonnet user-sim on the real τ³ airline tools + policy; records the trajectory and recomputes the DB grade. |
 | Extract | [`poc/analyze_beliefs.py`](poc/analyze_beliefs.py) | Sonnet observer proposes candidate violated-requirement findings + cited evidence (first-pass, unverified — an extraction heuristic, *not* the deferred belief-state layer). |
 | Verify | [`poc/verify_findings.py`](poc/verify_findings.py) | Deterministic quote/action grounding + independent grade recompute; rejects ungrounded findings. |
-| Preflight-requirements grade | `PreflightRequirementsEvaluator` — [`src/…/preflight_requirements_evaluator.py`](https://github.com/borisdev/tau-bench-audit/blob/main/src/tau2/evaluator/preflight_requirements_evaluator.py) | Grades a trajectory against the task's `UserPreflightRequirements` (typed constraints with source-quote provenance). |
+| Preflight-requirements grade | `PreflightRequirementsEvaluator` — [`src/…/preflight_requirements_evaluator.py`](https://github.com/borisdev/tau-preflight-check-bench/blob/main/src/tau2/evaluator/preflight_requirements_evaluator.py) | Grades a trajectory against the task's `UserPreflightRequirements` (typed constraints with source-quote provenance). |
 
 Data artifacts: [`poc/trajectories.json`](poc/trajectories.json), [`poc/verified_findings.json`](poc/verified_findings.json), readable transcripts in [`poc/traces/`](poc/traces/).
 
@@ -289,6 +289,6 @@ Each rule's `action` is a **canonical τ³ tool name**, matched against the traj
 - **Worked example:** [`poc/CASE_STUDY.md`](poc/CASE_STUDY.md) — task 47 with verbatim runtime objects and a turn-by-turn belief table.
 - **Per-task detail:** [`poc/FINDINGS.md`](poc/FINDINGS.md) — the pilot table with evidence and the verifier output.
 - **Code / data:** [`poc/`](poc/) scripts and JSON artifacts; readable transcripts in [`poc/traces/`](poc/traces/).
-- **Refactor:** [issue #1](https://github.com/borisdev/tau-bench-audit/issues/1) · merged to `main` (added the optional `user_preflight_requirements` field).
+- **Refactor:** [issue #1](https://github.com/borisdev/tau-preflight-check-bench/issues/1) · merged to `main` (added the optional `user_preflight_requirements` field).
 - **Provenance:** [`VENDOR.md`](VENDOR.md) · [`LICENSE`](LICENSE) (MIT, Sierra Research) · [`README_upstream_tau3.md`](README_upstream_tau3.md).
 
