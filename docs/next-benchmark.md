@@ -72,3 +72,16 @@ To make the grading **fair**, the agent must be **told** to preflight-check; oth
 - Policy still silent on a specific latent pref → **Pattern B** (flag → SME → new policy invariant). The flywheel.
 
 **Next step:** draft the calibrated preflight clause for `policy.md` (a fork-local addition, noted in VENDOR), then re-run the pilot against the updated policy to show the agent was told, skipped it, and τ-bench still passed.
+
+
+---
+
+## Belief tracking — the process grader (Phase 3) + prior art (folded out of the README)
+
+`UserPreflightRequirementsBelief` — per-turn tracking of whether the agent *resolves* each requirement (each slot `KNOWN` / `UNKNOWN`) **before acting**, scored against the same target. This is the **process grader** the calibration bench needs (*did the agent ask/confirm before it acted?*). ("Belief state" is the term of art in dialogue-state tracking — Young et al. 2013.) Prior work that frames this as the open target:
+
+- **Deng et al. 2026** ([arXiv:2606.03135](https://arxiv.org/abs/2606.03135)) rewards clarifying questions by information gain, but names our exact target as *future work*: App. 6.5 flags "clarification resolves ambiguity but execution violates policy," motivating "jointly optimizing clarification and execution."
+- **PDDL-Mind** ([arXiv:2604.17819](https://arxiv.org/abs/2604.17819)) makes belief explicit as a *tracked* quantity; we extend belief from tracked → an *action precondition*.
+- **Intent-governed authorization** ([arXiv:2606.22916](https://arxiv.org/abs/2606.22916)) gates tool authority by *expressed* intent; belief tracking targets *latent* intent — inferred and verified.
+
+Design + full prior art: `PROBLEM_BELIEF_SPEC.md` · `FRAMING.md`.
