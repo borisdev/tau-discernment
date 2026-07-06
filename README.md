@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/borisdev/tau-preflight-check-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/borisdev/tau-preflight-check-bench/actions/workflows/ci.yml)
 
-*Before an AI agent fires a consequential action, does it respect the user's action-relevant requirements — and can the grader detect when it does not?*
+*Can an AI agent do the one thing the user told it not to — and still pass the benchmark?*
 
 ## Motivation
 
