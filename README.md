@@ -49,9 +49,9 @@ We ran Claude Haiku on τ³-bench airline task 47 and flag an **in-spirit failur
 
 *The patch* (below) shows how we make that requirement gradeable.
 
-### Medical side-effects analogy
+### Medical analogy
 
-Like a medical doctor treating a patient, an AI agent can *effectively* solve the customer's problem yet still harm them through the **side effects** of its actions — and **each customer tolerates different side effects** (task 47: an unwanted transfer). τ³ grades effectiveness — *did the agent reach the target outcome?* We add a second dimension — *did it respect the customer’s limits on how — even the ones they never voiced?* (Whether the agent actively *asks* to surface those limits is the later belief-tracking phase.)
+Analogous to how a medical doctor can harm or hassle a patient by ignoring her personal side-effect fears and inconvenience profile, a customer-service agent can harm or hassle a customer by ignoring their latent action-requirements and understanding.
 
 ## Release scope
 
