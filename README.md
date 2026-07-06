@@ -99,11 +99,7 @@ The `PreflightRequirementsEvaluator` flips task 47 `PASS → FAIL` — a control
 
 Epistemic precondition in depth (ontic vs epistemic, SME hydration, the PDDL / Pydantic action frame): [`docs/epistemic-preconditions.md`](docs/epistemic-preconditions.md).
 
-## Impact on AI quality: eliciting SME expertise and belief tracking
-
-Both directions build on the same `UserPreflightRequirements` target.
-
-### Eliciting SME expertise
+## Impact on AI quality: eliciting SME expertise
 
 Most real-world protocol rules aren't written into any task. Where the grader misses a prose requirement — or where none is specified in any task — is where to **elicit a domain expert**, turn the answer into a typed constraint, and build a reusable **`PreflightPolicyPack`**. Phase-1 flagging shows *which* actions need it most.
 
@@ -119,27 +115,7 @@ To illustrate, synthetic SME protocols answering *what must a customer-service a
 
 → Full illustrative checklist (~25 airline actions, with the anti-circularity caveat): [`docs/preflight-checklist-example.md`](docs/preflight-checklist-example.md). Harm-anchored elicitation pipeline: [`docs/design-notes-what-to-establish.md`](docs/design-notes-what-to-establish.md).
 
-### Belief tracking
-
-`UserPreflightRequirementsBelief` — per-turn tracking of whether the agent *resolves* each requirement (each slot `KNOWN` / `UNKNOWN`) before acting, scored against the same target. ("Belief state" is the term of art in dialogue-state tracking — Young et al. 2013.) Recent work points at this gap:
-- **Deng et al. 2026** ([arXiv:2606.03135](https://arxiv.org/abs/2606.03135)) rewards clarifying questions by information gain, but names our exact target as *future work*: App. 6.5 flags the case where "clarification resolves ambiguity but execution violates policy," motivating "jointly optimizing clarification and execution."
-- **PDDL-Mind** ([arXiv:2604.17819](https://arxiv.org/abs/2604.17819)) makes belief explicit as a *tracked* quantity; we extend belief from tracked → an *action precondition*.
-- **Intent-governed authorization** ([arXiv:2606.22916](https://arxiv.org/abs/2606.22916)) gates tool authority by *expressed* intent; belief tracking targets *latent* intent — inferred and verified, not declared.
-
-Design + full prior art: [`PROBLEM_BELIEF_SPEC.md`](PROBLEM_BELIEF_SPEC.md) · [`FRAMING.md`](FRAMING.md).
-
 ## FAQ
-
-<details>
-<summary><b>What failure patterns does this target?</b></summary>
-
-Two — both about a **check the agent should have run before a consequential action**, which τ³'s outcome-grade can't see:
-
-- **Revealed but missed** *(the proof — findable now)* — a **stated rule** is violated and the grader misses it. The rule can live in the **domain policy** (airline `policy.md` line 7: *"obtain explicit user confirmation before a booking-database update"* — an explicit preflight check) or in the **user's task profile** (tasks 47/6: *don't transfer me*). Either way it's written down, the agent skips it, and τ³ passes because the final DB is correct. Auto-detectable.
-- **Should-exist but omitted** *(the product — needs experts)* — **no rule exists yet** (the policy is *silent*). Nothing in the airline policy requires *confirm-before-escalate*, yet task 6 shows an agent escalating a user who didn't want it — the latent preference **reveals the policy gap**, exactly where a domain expert should author the missing rule.
-
-The first funds the second: proving the grader is blind to *stated* checks opens the systematic question of *which* consequential actions need a confirm-rule the policy doesn't yet have.
-</details>
 
 <details>
 <summary><b>How does it perform? (6-task pilot)</b></summary>
