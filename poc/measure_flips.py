@@ -28,7 +28,7 @@ ev = PreflightRequirementsEvaluator()
 rows, flips, graded = [], [], 0
 for tid, dump in lifted.items():
     upr = UserPreflightRequirements.model_validate(dump)
-    if not upr.constraints or tid not in trajs:
+    if not upr.action_preconditions or tid not in trajs:
         continue
     traj = trajs[tid]
     instr = _load_airline_task_instructions(tid).model_copy(update={"user_preflight_requirements": upr})

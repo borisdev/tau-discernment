@@ -28,34 +28,23 @@ Dependency-light on purpose (pydantic only) so it imports and tests without the 
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pydantic import BaseModel, Field
 
 
-class ConsentStatus(str, Enum):
-    """Whether the user has authorized an action.
+class ActionPrecondition(BaseModel):  # ActionPrecondition (mechanism/theory) — or ActionPolicy (product/client); maybe rename
+    """A single gradeable prohibition on a consequential action, with provenance to the prose.
 
-    Note the deliberate three-valued design. `DENIED` (an *explicit refusal*) is a stronger
-    fact than "no request observed" — do NOT collapse `DENIED` into a `transfer_requested=False`
-    style flag. `UNKNOWN` means the scenario says nothing about that action.
-    """
+    Phase-1 scope: each precondition is an outright prohibition — "this action must not fire"
+    (the user explicitly refused it). The action's precondition ("may fire only if the user
+    permits it") is unmet, so any invocation is a violation.
 
-    GRANTED = "granted"
-    DENIED = "denied"
-    UNKNOWN = "unknown"
-
-
-class TaskConstraint(BaseModel):
-    """A single gradeable, task-local requirement with provenance back to the source prose.
-
-    The pilot's legitimacy rests on provenance: we did not invent a rule, we made an
-    already-stated rule gradeable. `source_quote` must be a verbatim substring of the field
-    named by `source_field` (checked by `verify_provenance`).
+    Legitimacy rests on provenance: we did not invent a rule, we made an already-stated one
+    gradeable. `source_quote` must be a verbatim substring of the field named by `source_field`
+    (checked by `verify_provenance`).
     """
 
     id: str
-    action: str
+    action: str          # a canonical tau3 tool name
     rule: str
     source_field: str
     source_quote: str
@@ -64,22 +53,18 @@ class TaskConstraint(BaseModel):
 class UserPreflightRequirements(BaseModel):
     """The typed, task-local requirements derived only from the existing τ³ scenario.
 
-    - `goal`         — the user's objective (prose is fine; not itself a gradeable predicate).
-    - `preferences`  — soft, non-binding wants.
-    - `authorizations` — per-action consent (`ConsentStatus`): the grader reads `DENIED`
-                         (an explicit refusal) as a prohibition.
-    - `constraints`  — the gradeable units with provenance; each references an `action` that
-                       the grader cross-checks against `authorizations`.
+    - `goal`                 — the user's objective (prose; not itself a gradeable predicate).
+    - `preferences`          — soft, non-binding wants.
+    - `action_preconditions` — the gradeable units: per-action prohibitions with provenance.
     """
 
     goal: str | None = None
     preferences: list[str] = Field(default_factory=list)
-    authorizations: dict[str, ConsentStatus] = Field(default_factory=dict)
-    constraints: list[TaskConstraint] = Field(default_factory=list)
+    action_preconditions: list[ActionPrecondition] = Field(default_factory=list)
 
 
 def verify_provenance(instructions) -> list[str]:
-    """Deterministically verify every constraint's `source_quote` is a verbatim substring of
+    """Deterministically verify every precondition's `source_quote` is a verbatim substring of
     the field it cites. Returns a list of human-readable problems (empty == all grounded).
 
     `instructions` is a τ³ `StructuredUserInstructions` (duck-typed to avoid importing
@@ -102,7 +87,7 @@ def verify_provenance(instructions) -> list[str]:
         "unknown_info": instructions.unknown_info,
         "domain": instructions.domain,
     }
-    for c in requirements.constraints:
+    for c in requirements.action_preconditions:
         source = field_values.get(c.source_field)
         if source is None:
             problems.append(

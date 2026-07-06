@@ -21,7 +21,7 @@ for name, sub in [("tau2", "src/tau2"), ("tau2.domains", "src/tau2/domains"),
     sys.modules[name] = m
 
 from tau2.data_model.preflight_requirements import (
-    UserPreflightRequirements, ConsentStatus, TaskConstraint, verify_provenance)
+    UserPreflightRequirements, ActionPrecondition, verify_provenance)
 from tau2.data_model.fixtures_preflight import _load_airline_task_instructions
 import anthropic
 
@@ -64,18 +64,16 @@ def lift(task):
                                messages=[{"role": "user", "content": f"Task instructions:\n\n{ti}"}])
     cons = next((b.input.get("constraints", []) for b in r.content
                  if b.type == "tool_use" and b.name == "emit"), [])
-    constraints = [TaskConstraint(id=f"task{tid}.no_{c['action']}_{i}", action=c["action"],
-                                  rule=c.get("rule", ""), source_field="task_instructions",
-                                  source_quote=c["source_quote"]) for i, c in enumerate(cons)]
-    upr = UserPreflightRequirements(
-        authorizations={c.action: ConsentStatus.DENIED for c in constraints}, constraints=constraints)
+    preconds = [ActionPrecondition(id=f"task{tid}.no_{c['action']}_{i}", action=c["action"],
+                                   rule=c.get("rule", ""), source_field="task_instructions",
+                                   source_quote=c["source_quote"]) for i, c in enumerate(cons)]
+    upr = UserPreflightRequirements(action_preconditions=preconds)
     v1 = _load_airline_task_instructions(tid).model_copy(update={"user_preflight_requirements": upr})
     problems = verify_provenance(v1)
     bad = {p.split(":")[0] for p in problems}
-    if bad:  # drop ungrounded constraints, re-derive authorizations
-        constraints = [c for c in constraints if c.id not in bad]
-        upr = UserPreflightRequirements(
-            authorizations={c.action: ConsentStatus.DENIED for c in constraints}, constraints=constraints)
+    if bad:  # drop ungrounded preconditions
+        preconds = [c for c in preconds if c.id not in bad]
+        upr = UserPreflightRequirements(action_preconditions=preconds)
     return tid, upr.model_dump(mode="json"), len(cons), len(bad)
 
 
@@ -88,7 +86,7 @@ def main():
             try:
                 tid, dump, n_raw, n_bad = f.result()
                 out[tid] = dump
-                n = len(dump["constraints"])
+                n = len(dump["action_preconditions"])
                 with_c += (n > 0); total += n; dropped += n_bad
                 if n or n_bad:
                     print(f"task {tid}: {n} constraint(s)" + (f"  [dropped {n_bad} ungrounded]" if n_bad else ""))

@@ -17,9 +17,8 @@ import json
 from functools import lru_cache
 
 from tau2.data_model.preflight_requirements import (
-    ConsentStatus,
     UserPreflightRequirements,
-    TaskConstraint,
+    ActionPrecondition,
     verify_provenance,
 )
 from tau2.data_model.tasks import StructuredUserInstructions
@@ -52,14 +51,11 @@ def build_task_47() -> StructuredUserInstructions:
     v1 = _load_airline_task_instructions("47")
 
     requirements = UserPreflightRequirements(
-        authorizations={
-            "transfer_to_human_agents": ConsentStatus.DENIED,
-        },
-        constraints=[
-            TaskConstraint(
+        action_preconditions=[
+            ActionPrecondition(
                 id="task47.no_unwanted_transfer",
                 action="transfer_to_human_agents",
-                rule="the agent must not transfer the user when transfer authorization is denied",
+                rule="the agent must not transfer the user; the user explicitly refused",
                 source_field="task_instructions",
                 # verbatim substring of task_instructions (lower-case, inside a compound sentence)
                 source_quote="you don't want to be transferred to another agent",

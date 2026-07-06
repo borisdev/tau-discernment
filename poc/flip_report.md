@@ -1,7 +1,7 @@
 # Full-suite paired re-scoring (airline)
 
 - 50 tasks run; **27 tau3 PASS / 23 FAIL**
-- **50** tasks lifted; **12** carry a grounded constraint and were paired re-scored
+- **50** tasks lifted; **11** carry a grounded constraint and were paired re-scored
 - **1 flips** (tau3 PASS -> preflight FAIL): a stated requirement the DB grade missed
 
 | task | tau3 | preflight | | violated action(s) |
@@ -14,7 +14,6 @@
 | 31 | FAIL | PASS |  | — |
 | 35 | FAIL | PASS |  | — |
 | 36 | PASS | PASS | agree | — |
-| 42 | FAIL | PASS |  | — |
 | 43 | PASS | PASS | agree | — |
 | 45 | FAIL | PASS |  | — |
 | 47 | PASS | PASS | agree | — |

@@ -19,9 +19,8 @@ import json
 
 from tau2.data_model.fixtures_preflight import build_task_47, get_preflight_fixture
 from tau2.data_model.preflight_requirements import (
-    ConsentStatus,
     UserPreflightRequirements,
-    TaskConstraint,
+    ActionPrecondition,
     verify_provenance,
 )
 from tau2.data_model.tasks import StructuredUserInstructions
@@ -82,8 +81,8 @@ def test_every_constraint_quote_is_grounded():
 
 def test_provenance_rejects_ungrounded_quote():
     instructions = build_task_47()
-    instructions.user_preflight_requirements.constraints.append(
-        TaskConstraint(
+    instructions.user_preflight_requirements.action_preconditions.append(
+        ActionPrecondition(
             id="bogus",
             action="cancel_reservation",
             rule="invented",
@@ -103,9 +102,9 @@ def test_verify_provenance_no_requirements_is_empty():
 # --- Semantic distinctions ------------------------------------------------------
 
 
-def test_transfer_is_denied_not_merely_unrequested():
-    auths = build_task_47().user_preflight_requirements.authorizations
-    assert auths["transfer_to_human_agents"] == ConsentStatus.DENIED
+def test_transfer_is_a_prohibition_on_the_canonical_tool():
+    pcs = build_task_47().user_preflight_requirements.action_preconditions
+    assert any(p.action == "transfer_to_human_agents" for p in pcs)
 
 
 # --- The grader flip ------------------------------------------------------------
@@ -133,8 +132,8 @@ def test_structured_grader_flips_task_47_to_fail_on_transfer():
     ]
     assert len(transfer_violations) == 1
     v = transfer_violations[0]
-    assert v.constraint_id == "task47.no_unwanted_transfer"
-    assert v.requirement_kind == "denied_authorization"
+    assert v.precondition_id == "task47.no_unwanted_transfer"
+    assert v.requirement_kind == "prohibited_action"
     assert v.turn == 12  # the transfer_to_human_agents call in the recorded trajectory
     assert "you don't want to be transferred to another agent" == v.source_quote
 
@@ -168,11 +167,10 @@ def test_evaluate_instructions_skips_when_no_requirements():
     assert result is None
 
 
-def test_denied_authorization_grades_generic_requirements():
+def test_prohibition_grades_generic_requirements():
     reqs = UserPreflightRequirements(
-        authorizations={"charge_payment": ConsentStatus.DENIED},
-        constraints=[
-            TaskConstraint(
+        action_preconditions=[
+            ActionPrecondition(
                 id="x.no_charge",
                 action="charge_payment",
                 rule="do not charge without consent",
