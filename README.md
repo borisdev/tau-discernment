@@ -165,6 +165,6 @@ Each rule's `action` is a **canonical τ³ tool name**, matched against the traj
 
 ## About me
 
-I dissect implicit domain reasoning into explicit underlying structures — **domain ontology as code** — so AI can become more transparent and reproducible. τ-PreflightCheck is one instance: a user's *latent* requirement, buried in task prose, lifted into a typed, provenance-grounded object a grader can score (`UserPreflightRequirements`).
+I dissect implicit domain reasoning into explicit underlying structures — **domain ontology as code** — so AI can become more transparent and reproducible.
 
 Boris — [borisdev.dev](https://borisdev.dev/)
