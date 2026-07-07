@@ -5,7 +5,7 @@
 <details>
 <summary><b>What is τ (tau)?</b></summary>
 
-[τ-bench](https://github.com/sierra-research/tau-bench) grades **Tool–Agent–User** interaction (Sierra): a *tool*-using *agent* serving a *user* in a real-world domain. τ² added dual control; **τ³** added task fixes (the version we extend).
+[τ-bench](https://github.com/sierra-research/tau2-bench) grades **Tool–Agent–User** interaction: a *tool*-using *agent* serving a *user* in a real-world domain. τ² added dual control; **τ³** added task fixes (the version we extend).
 </details>
 
 *This research extends τ³-bench beyond **effectiveness** to also grade **discernment** — how well an AI agent behaves when faced with competing goals:*
