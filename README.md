@@ -8,41 +8,7 @@
 - **safety invariants** — policy rules that hold for every customer
 - **user requirements** — this customer's own constraints
 
-The **two riskiest assumptions** of this work:
-
-1. **Is grading discernment relevant in the real world?**
-2. **Is it possible to measure discernment?**
-
-<details>
-<summary><b>Glossary</b> — key terms, sequenced by dependency (click to expand)</summary>
-
-*Sequenced by dependency — each definition uses only the terms above it.*
-
-- **τ (tau)** — τ-bench grades **Tool–Agent–User** interaction (Sierra): a *tool*-using *agent* serving a *user* in a real-world domain. τ² added dual control; **τ³** added task fixes (the version we extend); this repo is **τ-discernment**.
-- **Common ground / common grounding** — the shared understanding two parties create, repair, and update in dialogue; an established term (Clark 1991; [Udagawa & Aizawa, AAAI 2019](https://arxiv.org/abs/1907.03399)). The concept behind the preflight check — the agent reaches *enough* shared understanding before acting (Clark's **grounding criterion**, *sufficient for current purposes*).
-- **Ontic predicate** — a fact about the world, resolvable by a **database query** (e.g., `refund_eligible` — check the fare rules). τ³ already grades these.
-- **Epistemic predicate** — a fact about what the *agent knows*. **No DB query can resolve it** — the agent must **probe the user** (ask) to reduce the ambiguity in its belief. *Why the word earns its keep (counterfactual):* drop "epistemic" and "precondition" defaults to **ontic** — you query the DB, see nothing wrong, and pass task 47. "Epistemic" is the intervention: it redirects the check from the world to the agent's belief. Without the word, the failure is invisible.
-- **`UserPreflightRequirements`** — the typed, checkable representation of the user's action-relevant requirements (goal, preferences, action preconditions), lifted from τ³'s `task_instructions` prose with a `source_quote` for each. The grader sees it; the agent never does. Scoped to what *this* interaction's actions require, not everything about the user. (See the patch below.)
-- **Agent belief state** *(later phase)* — the agent's task-scoped model of the user over the fields the pending action depends on, each slot `UNKNOWN` until resolved by probing. Tracking whether the agent *resolves* each requirement before acting is a deferred agent-belief-tracking layer; the paired re-scoring experiment needs only the grader's view. (Belief-state / dialogue-state tracking — Young et al. 2013; user modeling — Fischer 2001.)
-- **Ambiguity** — the gap between the true `UserPreflightRequirements` and the agent's belief state over the fields required to safely execute the pending action. (Belief-side — *not* τ³'s *ambiguous instructions*; see below.)
-- **Epistemic precondition** — an epistemic predicate an action requires the agent to *know* (resolve) before it may fire. Grounded prior art: knowledge preconditions (Moore 1985), knowledge-based programs (Fagin et al. 1995). [details →](docs/epistemic-preconditions.md)
-- **Ignorance** *(of the user — a missing field)* — `UserPreflightRequirements` doesn't even contain the user-state dimension this action needs, so no one knows to check it: a **false negative** on the user's state of mind. *We don't know the shape.* Fixing it needs a **human expert** to author the missing field (Phase 2 — *Resolve Ignorance*).
-- **Underspecification** *(cause)* — the policy-side of ignorance: an action's epistemic preconditions were never authored, so the grader can't score them.
-- **Epistemic / belief ambiguity** *(a known field with an unknown value)* — the field **exists** in the shape but its value is `UNKNOWN` in the agent's belief, and the agent acts without resolving it. *We know the shape, not the value* — the agent can fix this at runtime by **asking** (Phase 3). Distinguish from **ignorance** (the field is missing entirely) and from τ³'s ambiguity ↓.
-- **Ambiguous instructions** *(τ³ — not ours)* — an underspecified *task prompt* that makes the **simulated user** behave nondeterministically across trials; τ³ fixed these ([τ³ task-fixes](https://taubench.com/blog/tau3-task-fixes.html)). That's ambiguity in the **task authoring** (author ↔ simulator); *epistemic/belief ambiguity* is in the **agent's belief** (agent ↔ user) and survives even a τ³-clean task like 47.
-- **Preflight check** — the per-action checklist of preconditions the agent must confirm *before* firing a consequential action; if any required belief is `UNKNOWN`, it **halts and asks**. Analogues: *aviation* — the pilot's mandatory pre-departure checklist; *production / deploy engineering* — pre-release "preflight" checks (health, config; cf. CORS *preflight*) run before a change ships; *this AI-agent context* — verify the user's intent / consent / scope before a tool call; *mature SWE-agent design* — a pre-tool-call authorization guard (ABAC over the agent's belief; Design-by-Contract `require`; an OPA policy-decision-point before an API call). Named after the aviation checklist; cf. Gawande's *Checklist Manifesto*, FMEA.
-- **Gating / grading** — using an epistemic precondition at runtime (**gate**: ask vs. act) and in eval (**grade**: pass vs. fail). [epistemic-precondition details →](docs/epistemic-preconditions.md)
-- **Policy** — a set of rules deciding whether an action is allowed. In access control, the decision artifact; here, the per-action preconditions the grader/gate checks. (Standard hierarchy — XACML: `PolicySet → Policy → Rule`; OPA ships a *bundle*. A single rule = an `ActionPrecondition`.)
-- **`PreflightPolicyPack`** *(future — Phase 2)* — a domain's **bundle** of expert-authored per-action preflight rules (a *policy set* / OPA *bundle*). Distinct from Phase-1 `UserPreflightRequirements`, which is grounded in each task's own wording; the pack adds rules **no task states** ('should-exist but omitted'), elicited from SMEs. Not a dependency of the current experiment.
-- **PDDL** — Planning Domain Definition Language; models an action as name / parameters / preconditions / effects. We extend its preconditions with the epistemic kind (related: [PDDL-Mind](https://arxiv.org/abs/2604.17819)).
-
-Deeper theory and full prior art (POMDP belief states, assistance games, epistemic planning, Design by Contract): [`FRAMING.md`](FRAMING.md). Design notes — the four content types (requirement / preference / understanding / consent), informed consent as a bounded slice of causal-model alignment, and the harm-anchored SME elicitation pipeline: [`docs/design-notes-what-to-establish.md`](docs/design-notes-what-to-establish.md).
-
-</details>
-
-## Risky assumption 1 of 2: Is grading discernment relevant in the real world?
-
-We believe so. Below are real airline customer-service situations where the three goals conflict and terminal success alone can't separate a discerning agent from a careless one:
+Below are hypothetical airline customer-service scenarios illustrating how goals conflict:
 
 | Tension | Airline example |
 |---|---|
@@ -52,7 +18,20 @@ We believe so. Below are real airline customer-service situations where the thre
 | User requirement vs safety invariant | User says "don't ask me anything else," but the cancellation is irreversible. |
 | *(the summary)* | An agent can cancel correctly yet skip warning about the refund loss — **same terminal state, worse discernment.** |
 
-The benchmark doesn't hard-code how to resolve these — it grades whether the agent's choice matches **SME-authored policy** for the situation. **User requirements aren't absolute:** they're one goal among three, and discernment is deciding *when* a stated preference is honored and *when* it's overridden.
+The **two riskiest assumptions** of this work:
+
+1. **Is grading discernment relevant in the real world?**
+2. **Is it possible to measure discernment?**
+
+<details>
+<summary><b>What is τ (tau)?</b></summary>
+
+τ-bench grades **Tool–Agent–User** interaction (Sierra): a *tool*-using *agent* serving a *user* in a real-world domain. τ² added dual control; **τ³** added task fixes (the version we extend); this repo is **τ-discernment**.
+</details>
+
+## Risky assumption 1 of 2: Is grading discernment relevant in the real world?
+
+We believe so — the scenarios above show the three goals genuinely conflict, and terminal success alone can't separate a discerning agent from a careless one. The benchmark doesn't hard-code how to resolve these — it grades whether the agent's choice matches **SME-authored policy** for the situation. **User requirements aren't absolute:** they're one goal among three, and discernment is deciding *when* a stated preference is honored and *when* it's overridden.
 
 ## Risky assumption 2 of 2: Is it possible to measure discernment?
 
